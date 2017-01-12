@@ -53,13 +53,18 @@ public class Gardener extends Robot {
     protected void doTurn() throws GameActionException {
         if (tryDodge()) return; // don't try and plant or build if i'm dodgin mfkas
         saveThePoorTrees();
-        if (state == GOING_HOME) {
-            goHome();
-        } else if (state == MOVING_TO_PLANTING_LOCATION) {
-            moveToOrPlant(destinationPlantCenter, destinationPlanterCenter);
-        } else {
-            if (tryPlantTree()) return;
-            if (tryBuildBot()) return;
+
+        debug("Gardener state: " + state);
+        switch(state) {
+            case GOING_HOME:
+                goHome();
+                break;
+            case MOVING_TO_PLANTING_LOCATION:
+                moveToOrPlant(destinationPlantCenter, destinationPlanterCenter);
+                break;
+            case TENDING:
+                if (tryPlantTree()) return;
+                if (tryBuildBot()) return;
         }
     }
 
@@ -88,17 +93,10 @@ public class Gardener extends Robot {
             TreeInfo[] myTrees = Arrays.stream(nearbyTrees).filter(t -> t.team == myTeam).toArray(TreeInfo[]::new);
 
             for (TreeInfo ti : myTrees) {
-                // TODO: state machine where this is cached between rounds
-//                if (ti.team != myTeam) continue;
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("GOAL2");
                 goal = plantLocationForTree(ti);
-
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("FOUND");
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(goal);
                 if (goal != null) {
-
+                    debug("Found planting locations " + goal.toString());
                     setMovingToPlantingLocation(goal[0], goal[1]);
-                    if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("moveToOrPlant");
                     moveToOrPlant(goal[0], goal[1]);
                     return true;
                 }
@@ -129,42 +127,21 @@ public class Gardener extends Robot {
     }
 
     private void moveToOrPlant(MapLocation plantCenter, MapLocation planterCenter) throws GameActionException {
-        Direction plantDir = planterCenter.directionTo(plantCenter);
-        if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("plantCenter");
-        if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(plantCenter);
-        if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("planterCenter");
-        if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(planterCenter);
+        debug("moveToOrPlant");
+        debug("plantCenter " + plantCenter.toString());
+        debug("planterCenter " + planterCenter.toString());
 
+        Direction plantDir = planterCenter.directionTo(plantCenter);
         if (location.equals(planterCenter)) {
-            setTending();
             rc.plantTree(plantDir);
+            setTending();
             return;
         }
         if (rc.canMove(planterCenter)) {
-            if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("loc");
-            if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(location);
             rc.move(planterCenter);
             location = plantCenter;
-            if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("getLocation");
-            if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(rc.getLocation());
-//            Clock.yield();
-            if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("plantDir");
-            if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(plantDir);
-            try {
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("canPlantTree");
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(rc.canPlantTree(plantDir));
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("isoccupied");
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(rc.isCircleOccupied(plantCenter, GameConstants.BULLET_TREE_RADIUS));
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("isCircleOccupiedExceptByThisRobot");
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(rc.isCircleOccupiedExceptByThisRobot(plantCenter, GameConstants.BULLET_TREE_RADIUS));
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("isLocationOccupiedByTree");
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(rc.isLocationOccupiedByTree(plantCenter));
-                rc.plantTree(plantDir);
-                setTending();
-            } catch (Exception e) {
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("e");
-                if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(e);
-            }
+            rc.plantTree(plantDir);
+            setTending();
         }
     }
     private MapLocation[] plantLocationForATree(TreeInfo ti, boolean next, boolean add) throws GameActionException {
@@ -202,7 +179,7 @@ public class Gardener extends Robot {
 
 
         MapLocation plantLoc = null;
-        if (side != null && rc.onTheMap(side) && rc.canSenseAllOfCircle(side, GameConstants.BULLET_TREE_RADIUS)) {
+        if (rc.onTheMap(side) && rc.canSenseAllOfCircle(side, GameConstants.BULLET_TREE_RADIUS) && rc.isCircleOccupiedExceptByThisRobot(side, GameConstants.BULLET_TREE_RADIUS)) {
             plantLoc = findSpotAroundCircle(side, GameConstants.BULLET_TREE_RADIUS, myType.bodyRadius);
         }
 

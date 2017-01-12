@@ -52,6 +52,10 @@ abstract public class Robot {
         }
     }
 
+    protected void debug(String msg) {
+        if (rc.getID() == 11849 && rc.getRoundNum() < 66) System.out.println(msg);
+    }
+
     protected boolean tryMove(Direction dir) throws GameActionException {
         // First, try intended direction
         if (rc.canMove(dir)) {
