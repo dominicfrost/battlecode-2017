@@ -1,10 +1,13 @@
 package battlecode2017;
 import java.util.Arrays;
-import java.util.Map;
-
 import battlecode.common.*;
 
 abstract public class Robot {
+    // DEBUG CONSTANTS
+    private final int ROBOT_ID = 11849;
+    private final int MAX_ROUND = 59;
+    private final int MIN_ROUND = 59;
+
     private final double POTENTIAL_LOC_GRANULARITY = 1.0;
     private final float BROADCAST_FLOAT_MULTIPLIER = 100F;
     private final int CIRCLING_GRANULARITY = 8;
@@ -61,7 +64,7 @@ abstract public class Robot {
     }
 
     protected boolean debugCheck() {
-        return rc.getID() == 11849 && rc.getRoundNum() < 60;
+        return rc.getID() == ROBOT_ID && rc.getRoundNum() <= MAX_ROUND && rc.getRoundNum() >= MIN_ROUND;
     }
 
     protected boolean tryMove(Direction dir) throws GameActionException {
@@ -102,12 +105,10 @@ abstract public class Robot {
         Direction nextDir = Direction.getEast();
         for (int i = 0; i < CIRCLING_GRANULARITY; i++) {
             nextDir = nextDir.rotateLeftDegrees(CIRCLING_DEGREE_INTERVAL * i);
-
             debug("nextDir " + nextDir.toString());
             nextLoc = center.add(nextDir, distanceToCenter);
             debug("nextLoc " + nextLoc.toString());
             debugIndicator(nextLoc);
-
             if (rc.onTheMap(nextLoc) && rc.canSenseAllOfCircle(nextLoc, revolverRadius) && !rc.isCircleOccupied(nextLoc, revolverRadius)  && !rc.isCircleOccupied(nextLoc, revolverRadius)) return nextLoc;
         }
 
