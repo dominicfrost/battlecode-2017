@@ -25,6 +25,7 @@ public class Gardener extends Robot {
     private final String TENDING = "TENDING";
     private final String MOVING_TO_PLANTING_LOCATION = "MOVING_TO_PLANTING_LOCATION";
     private final String GOING_HOME = "GOING_HOME";
+    private final String SPAWNING_SCOUTS = "SPAWNING_SCOUTS";
 
 //    private enum states{
 //        TENDING,
@@ -40,7 +41,7 @@ public class Gardener extends Robot {
         super.initRobotState();
         buildCount = 0;
         plantVertically = true;
-        state = TENDING;
+        state = SPAWNING_SCOUTS;
     }
 
     @Override
@@ -56,6 +57,11 @@ public class Gardener extends Robot {
 
         debug("Gardener state: " + state);
         switch(state) {
+            case SPAWNING_SCOUTS:
+                if (rc.canBuildRobot(RobotType.SCOUT, Direction.getNorth())) {
+                    rc.buildRobot(RobotType.SCOUT, Direction.getNorth());
+                }
+                break;
             case GOING_HOME:
                 goHome();
                 break;
