@@ -179,8 +179,10 @@ public class Gardener extends Robot {
 
 
         MapLocation plantLoc = null;
+        debug("Trying to find planting location around " + side.toString());
         if (rc.onTheMap(side) && rc.canSenseAllOfCircle(side, GameConstants.BULLET_TREE_RADIUS) && rc.isCircleOccupiedExceptByThisRobot(side, GameConstants.BULLET_TREE_RADIUS)) {
             plantLoc = findSpotAroundCircle(side, GameConstants.BULLET_TREE_RADIUS, myType.bodyRadius);
+            debug("Found planting location! " + plantLoc.toString());
         }
 
         if (plantLoc != null) return new MapLocation[]{side, plantLoc};

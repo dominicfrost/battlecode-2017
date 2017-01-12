@@ -53,7 +53,15 @@ abstract public class Robot {
     }
 
     protected void debug(String msg) {
-        if (rc.getID() == 11849 && rc.getRoundNum() < 66) System.out.println(msg);
+        if (debugCheck()) System.out.println(msg);
+    }
+
+    protected void debugIndicator(MapLocation l) throws GameActionException {
+        if (debugCheck() && rc.onTheMap(l)) rc.setIndicatorDot(l, 0,0,0);
+    }
+
+    protected boolean debugCheck() {
+        return rc.getID() == 11849 && rc.getRoundNum() < 60;
     }
 
     protected boolean tryMove(Direction dir) throws GameActionException {
@@ -88,20 +96,17 @@ abstract public class Robot {
 
     protected MapLocation findSpotAroundCircle(MapLocation center, float centerRadius, float revolverRadius) throws GameActionException {
         float distanceToCenter = centerRadius + revolverRadius;
-        if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("center");
-        if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(center);
+        debug("findSpotAroundCircle - center: " + center.toString());
 
         MapLocation nextLoc;
         Direction nextDir = Direction.getEast();
         for (int i = 0; i < CIRCLING_GRANULARITY; i++) {
             nextDir = nextDir.rotateLeftDegrees(CIRCLING_DEGREE_INTERVAL * i);
 
-            if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("nextDir");
-            if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(nextDir);
+            debug("nextDir " + nextDir.toString());
             nextLoc = center.add(nextDir, distanceToCenter);
-            if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println("nextLoc");
-            if (rc.getID() == 13337 && rc.getRoundNum() < 66) System.out.println(nextLoc);
-            if (rc.onTheMap(nextLoc) &&rc.getID() == 13337 && rc.getRoundNum() < 66) rc.setIndicatorDot(nextLoc, 0,0,0);
+            debug("nextLoc " + nextLoc.toString());
+            debugIndicator(nextLoc);
 
             if (rc.onTheMap(nextLoc) && rc.canSenseAllOfCircle(nextLoc, revolverRadius) && !rc.isCircleOccupied(nextLoc, revolverRadius)  && !rc.isCircleOccupied(nextLoc, revolverRadius)) return nextLoc;
         }
