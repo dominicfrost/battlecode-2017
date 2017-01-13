@@ -1,5 +1,7 @@
 package battlecode2017;
 import battlecode.common.*;
+import jdk.nashorn.internal.ir.annotations.Ignore;
+
 import java.util.*;
 
 public class Gardener extends Robot {
@@ -8,8 +10,6 @@ public class Gardener extends Robot {
     private final float STOP_PLANTING_BULLET_COUNT = 100000F;
     private final float PLANTING_DISTANCE = GameConstants.BULLET_TREE_RADIUS * 2.1F;
     private final int IM_HOME = 100;
-
-
     private final int SPAWN_SEARCH_DEGREE = 30;
     private final float SPAWN_SEARCH_DEGREE_INTERVAL = 360.0F / SPAWN_SEARCH_DEGREE;
 
@@ -18,18 +18,16 @@ public class Gardener extends Robot {
     private boolean plantVertically;
     private String state;
 
-    // MOVING_TO_PLANTING_LOCATION stuff
+    // MOVING_TO_PLANTING_LOCATION cache
     private MapLocation destinationPlantCenter;
     private MapLocation destinationPlanterCenter;
 
+    // Gardener states
     private final String TENDING = "TENDING";
     private final String MOVING_TO_PLANTING_LOCATION = "MOVING_TO_PLANTING_LOCATION";
     private final String GOING_HOME = "GOING_HOME";
 
-//    private enum states{
-//        TENDING,
-//        MOVING_TO_PLANTING_LOCATION,
-//    }
+    private Bug bugger;
 
     Gardener(RobotController _rc) {
         super(_rc);
@@ -40,7 +38,9 @@ public class Gardener extends Robot {
         super.initRobotState();
         buildCount = 0;
         plantVertically = true;
-        state = TENDING;
+        state = GOING_HOME;
+        bugger = new Bug(rc);
+        bugger.setGoal(rc.getLocation(), home, 20);
     }
 
     @Override
@@ -55,41 +55,54 @@ public class Gardener extends Robot {
         saveThePoorTrees();
 
         debug("Gardener state: " + state);
-        switch(state) {
-            case GOING_HOME:
-                goHome();
-                break;
-            case MOVING_TO_PLANTING_LOCATION:
-                moveToOrPlant(destinationPlantCenter, destinationPlanterCenter);
-                break;
-            case TENDING:
-                if (tryPlantTree()) return;
-                if (tryBuildBot()) return;
+//        switch(state) {
+//            case GOING_HOME:
+//                goHome();
+//                break;
+//            case MOVING_TO_PLANTING_LOCATION:
+//                moveToOrPlant(destinationPlantCenter, destinationPlanterCenter);
+//                break;
+//            case TENDING:
+//                if (tryPlantTree()) return;
+//                if (tryBuildBot()) return;
+//        }
+
+        if (!bugger.hasGoal()) {
+            bugger.setGoal(location, home, 20);
+        }
+        Direction d = bugger.nextStride(location);
+        if (d != null && rc.canMove(d)) {
+            rc.move(d);
         }
     }
 
     private void saveThePoorTrees() throws GameActionException {
         for (TreeInfo t : nearbyTrees) {
-            if (t.team == myTeam && t.health < 20 && rc.canWater(t.location)) rc.water(t.location);
+            if (t.team == myTeam && t.health < 45 && rc.canWater(t.location)) rc.water(t.location);
         }
     }
 
     private void goHome() throws GameActionException {
-        if (location.directionTo(home) != null) tryMove(location.directionTo(home));
+        if (rc.getID() == 34 && rc.getRoundNum() < 185 ) System.out.println("goHome");
+
+        Direction next = bugger.nextStride(location);
+        if (next != null && rc.canMove(next)) rc.move(next);
         if (location.distanceSquaredTo(home) <= IM_HOME) setTending();
     }
 
     private boolean shouldPlantTree() {
         if (bulletCount >= STOP_PLANTING_BULLET_COUNT) return false;
-        if (!isBuildReady) return false;
-        if (!rc.hasTreeBuildRequirements()) return false;
-        if (buildCount % BUILD_TO_PLANT_MODULUS > MAX_PLANT_REMAINDER) return false;
+        debug("A" + rc.isBuildReady());
+        if (!isBuildReady) return false;debug("B");
+        if (!rc.hasTreeBuildRequirements()) return false;debug("C");
+        if (buildCount % BUILD_TO_PLANT_MODULUS > MAX_PLANT_REMAINDER) return false;debug("D");
         return true;
     }
 
     private boolean tryPlantTree() throws GameActionException {
         MapLocation[] goal;
         if (shouldPlantTree()) {
+            debug("Should plant tree");
             TreeInfo[] myTrees = Arrays.stream(nearbyTrees).filter(t -> t.team == myTeam).toArray(TreeInfo[]::new);
 
             for (TreeInfo ti : myTrees) {
@@ -130,25 +143,36 @@ public class Gardener extends Robot {
         debug("moveToOrPlant");
         debug("plantCenter " + plantCenter.toString());
         debug("planterCenter " + planterCenter.toString());
+        debug("rc.hasTreeBuildRequirements() " + rc.hasTreeBuildRequirements());
+        if (!rc.hasTreeBuildRequirements() || (rc.canSenseAllOfCircle(plantCenter, GameConstants.BULLET_TREE_RADIUS) && rc.isCircleOccupiedExceptByThisRobot(plantCenter, GameConstants.BULLET_TREE_RADIUS))) {
+
+            debug("moveToOrPlant D");
+            setTending();
+            return;
+        }
 
         Direction plantDir = planterCenter.directionTo(plantCenter);
         if (location.equals(planterCenter)) {
+            debug("moveToOrPlant A");
             rc.plantTree(plantDir);
             setTending();
             return;
         }
-        if (rc.canMove(planterCenter)) {
+        if (location.distanceSquaredTo(planterCenter) <= myType.strideRadius && rc.canMove(planterCenter)) {
             rc.move(planterCenter);
+            debug("moveToOrPlant B");
             location = plantCenter;
-            rc.plantTree(plantDir);
+            if (rc.canPlantTree(plantDir)) rc.plantTree(plantDir);
             setTending();
+            return;
         }
+        tryMove(location.directionTo(planterCenter));
     }
-    private MapLocation[] plantLocationForATree(TreeInfo ti, boolean next, boolean add) throws GameActionException {
+    private MapLocation[] plantLocationForATree(TreeInfo ti, boolean up, boolean add) throws GameActionException {
         MapLocation side;
 
         if (plantVertically) {
-            if (next) {
+            if (up) {
                 if (add) {
                     side = new MapLocation(ti.location.x, ti.location.y + PLANTING_DISTANCE);
                 } else {
@@ -162,7 +186,7 @@ public class Gardener extends Robot {
                 }
             }
         } else {
-            if (next) {
+            if (up) {
                 if (add) {
                     side = new MapLocation(ti.location.x + PLANTING_DISTANCE, ti.location.y);
                 } else {
@@ -180,9 +204,8 @@ public class Gardener extends Robot {
 
         MapLocation plantLoc = null;
         debug("Trying to find planting location around " + side.toString());
-        if (rc.onTheMap(side) && rc.canSenseAllOfCircle(side, GameConstants.BULLET_TREE_RADIUS) && rc.isCircleOccupiedExceptByThisRobot(side, GameConstants.BULLET_TREE_RADIUS)) {
+        if (rc.canSenseAllOfCircle(side, GameConstants.BULLET_TREE_RADIUS) && rc.onTheMap(side) && !rc.isCircleOccupiedExceptByThisRobot(side, GameConstants.BULLET_TREE_RADIUS)) {
             plantLoc = findSpotAroundCircle(side, GameConstants.BULLET_TREE_RADIUS, myType.bodyRadius);
-            debug("Found planting location! " + plantLoc.toString());
         }
 
         if (plantLoc != null) return new MapLocation[]{side, plantLoc};
@@ -191,14 +214,48 @@ public class Gardener extends Robot {
 
 
     private MapLocation[] plantLocationForTree(TreeInfo ti) throws GameActionException {
-        MapLocation[] goal = plantLocationForATree(ti, true, true);
-        if (goal != null) return goal;
-        goal = plantLocationForATree(ti, true, false);
-        if (goal != null) return goal;
-        goal = plantLocationForATree(ti, false, true);
-        if (goal != null) return goal;
-        goal = plantLocationForATree(ti, false, false);
-        if (goal != null) return goal;
+        MapLocation[] goal;
+        int nextDir;
+        Direction toHome = location.directionTo(home);
+        for (int i = 0; i < 4; i++) {
+
+            if (i == 0) {
+                nextDir = (((int) toHome.getAngleDegrees()) + 360) % 360;
+            } else if (i == 1) {
+                nextDir = (((int) toHome.rotateRightDegrees(90F).getAngleDegrees()) + 360) % 360;
+            } else if (i == 2) {
+                nextDir = (((int) toHome.rotateLeftDegrees(90F).getAngleDegrees()) + 360) % 360;
+            } else {
+                nextDir = (((int) toHome.rotateLeftDegrees(180F).getAngleDegrees()) + 360) % 360;
+            }
+
+            if (nextDir > 45 && nextDir < 135) {
+                goal = plantLocationForATree(ti, true, true);
+                if (goal != null) return goal;
+            } else if (nextDir < 225) {
+                goal = plantLocationForATree(ti, false, false);
+                if (goal != null) return goal;
+            } else if (nextDir < 315) {
+                goal = plantLocationForATree(ti, true, false);
+                if (goal != null) return goal;
+            } else {
+                goal = plantLocationForATree(ti, false, true);
+                if (goal != null) return goal;
+            }
+        }
+
+//        boolean a = randInt == 1;
+//        boolean b = randInt == 0;
+//
+//        goal = plantLocationForATree(ti, up, add);
+//        if (goal != null) return goal;
+//        goal = plantLocationForATree(ti, a, b);
+//        if (goal != null) return goal;
+//        goal = plantLocationForATree(ti, b, a);
+//        if (goal != null) return goal;
+//        goal = plantLocationForATree(ti, b, b);
+//        if (goal != null) return goal;
+
         return null;
     }
 

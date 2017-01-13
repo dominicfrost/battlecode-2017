@@ -1,12 +1,13 @@
 package battlecode2017;
 import java.util.Arrays;
+import java.util.Random;
 import battlecode.common.*;
 
 abstract public class Robot {
     // DEBUG CONSTANTS
     private final int ROBOT_ID = 11849;
-    private final int MAX_ROUND = 59;
-    private final int MIN_ROUND = 59;
+    private final int MIN_ROUND = 169;
+    private final int MAX_ROUND = 170;
 
     private final double POTENTIAL_LOC_GRANULARITY = 1.0;
     private final float BROADCAST_FLOAT_MULTIPLIER = 100F;
@@ -21,6 +22,7 @@ abstract public class Robot {
     private final int HOME_X = 0;
     private final int HOME_Y = 1;
 
+    protected Random rand;
     protected Team myTeam;
     protected Team enemyTeam;
     protected RobotController rc;
@@ -48,7 +50,7 @@ abstract public class Robot {
                 initRoundState();
                 doTurn();
             } catch (Exception e) {
-//                e.printStackTrace();
+                e.printStackTrace();
             }
 
             Clock.yield();
@@ -99,17 +101,17 @@ abstract public class Robot {
 
     protected MapLocation findSpotAroundCircle(MapLocation center, float centerRadius, float revolverRadius) throws GameActionException {
         float distanceToCenter = centerRadius + revolverRadius;
-        debug("findSpotAroundCircle - center: " + center.toString());
+        debug("findSpotAroundCircle\n  center: " + center.toString());
 
         MapLocation nextLoc;
         Direction nextDir = Direction.getEast();
         for (int i = 0; i < CIRCLING_GRANULARITY; i++) {
             nextDir = nextDir.rotateLeftDegrees(CIRCLING_DEGREE_INTERVAL * i);
-            debug("nextDir " + nextDir.toString());
+            debug("  nextDir " + nextDir.toString());
             nextLoc = center.add(nextDir, distanceToCenter);
-            debug("nextLoc " + nextLoc.toString());
+            debug("  nextLoc " + nextLoc.toString());
             debugIndicator(nextLoc);
-            if (rc.onTheMap(nextLoc) && rc.canSenseAllOfCircle(nextLoc, revolverRadius) && !rc.isCircleOccupied(nextLoc, revolverRadius)  && !rc.isCircleOccupied(nextLoc, revolverRadius)) return nextLoc;
+            if (rc.canSenseAllOfCircle(nextLoc, revolverRadius) && rc.onTheMap(nextLoc) && !rc.isCircleOccupied(nextLoc, revolverRadius)  && !rc.isCircleOccupied(nextLoc, revolverRadius)) return nextLoc;
         }
 
         return null;
@@ -178,6 +180,7 @@ abstract public class Robot {
     }
 
     protected void initRobotState() throws GameActionException {
+        rand = new Random();
         home = home();
         myTeam = rc.getTeam();
         enemyTeam = myTeam.opponent();
@@ -232,7 +235,7 @@ abstract public class Robot {
         }
 
         // filter any null values out. TODO: check byte code used by this
-        return Arrays.stream(locs).filter(l -> l == null).toArray(MapLocation[]::new);
+        return Arrays.stream(locs).filter(l -> l != null).toArray(MapLocation[]::new);
     }
 
 
