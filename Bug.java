@@ -31,6 +31,10 @@ public class Bug {
         return start != null && goal != null;
     }
 
+    public MapLocation goal() {
+        return goal;
+    }
+
     public void setGoal(MapLocation _start, MapLocation _goal, int _quitThresh) {
         if (rc.getID() == 10140 && rc.getRoundNum() < 231 ) System.out.println("setGoal");
         state = BugState.ON_MLINE;
