@@ -10,9 +10,9 @@ public class Bug {
     private MapLocation start;
     private MapLocation goal;
     private Direction mLineDir;
+    private RobotType myType;
 
     private MapLocation myLocation;
-    private MapLocation lastWallSpot;
     private MapLocation startLocation;
     private Direction myDirection;
     private boolean movedRight;
@@ -38,9 +38,9 @@ public class Bug {
         start = _start;
         goal = _goal;
         mLineDir = _start.directionTo(_goal);
-        lastWallSpot = null;
         myDirection = null;
         startLocation = null;
+        myType = rc.getType();
     }
 
 
@@ -87,7 +87,7 @@ public class Bug {
 
     //get the next location on the mLine and try to move there
     private Direction moveOnMLine() throws GameActionException {
-        if (!rc.isCircleOccupiedExceptByThisRobot(myLocation.add(mLineDir, rc.getType().strideRadius), rc.getType().bodyRadius)) {
+        if (!isOccupied(mLineDir)) {
             return mLineDir;
         } else {
             return getHandOnWall();
@@ -107,7 +107,7 @@ public class Bug {
                 state = BugState.ON_WALL;
                 movedRight = true;
                 myDirection = rightDir;
-                lastWallSpot = myLocation;
+//                lastWallSpot = myLocation;
                 startLocation = myLocation;
                 if (rc.getID() == 10140 && rc.getRoundNum() < 231) System.out.println("right");
                 return rightDir;
@@ -117,7 +117,7 @@ public class Bug {
                 state = BugState.ON_WALL;
                 movedRight = false;
                 myDirection = leftDir;
-                lastWallSpot = myLocation;
+//                lastWallSpot = myLocation;
                 startLocation = myLocation;
                 if (rc.getID() == 10140 && rc.getRoundNum() < 231) System.out.println("left");
                 return leftDir;
@@ -128,20 +128,20 @@ public class Bug {
     }
 
     private boolean isOccupied(Direction dir) throws GameActionException {
-        MapLocation dest = myLocation.add(dir, rc.getType().strideRadius);
-        return !rc.onTheMap(dest) || rc.isCircleOccupiedExceptByThisRobot(dest, rc.getType().bodyRadius);
+        MapLocation dest = myLocation.add(dir, myType.strideRadius);
+        return !rc.onTheMap(dest, myType.bodyRadius) || rc.isCircleOccupiedExceptByThisRobot(dest, myType.bodyRadius);
     }
 
     private Direction followWall() throws GameActionException {
         if (rc.getID() == 10140 && rc.getRoundNum() < 231 ) System.out.println("followWall");
-//        if (!myLocation.equals(lastWallSpot) && !lastWallSpot.add(myDirection, rc.getType().strideRadius).equals(myLocation)) return resetWanderer();
+//        if (!myLocation.equals(lastWallSpot) && !lastWallSpot.add(myDirection, myType.strideRadius).equals(myLocation)) return resetWanderer();
 
         Direction next;
         for (int i = -90; i < 180; i += FOLLOW_WALL_GRANULARITY) {
             next = rotateInDir(myDirection, !movedRight, i);
             if (!isOccupied(next)) {
                 myDirection = next;
-                lastWallSpot = myLocation;
+//                lastWallSpot = myLocation;
 
                 if (rc.getID() == 10140 && rc.getRoundNum() < 231) System.out.println("followed");
                 return next;

@@ -49,11 +49,11 @@ abstract public class Robot {
             try {
                 initRoundState();
                 doTurn();
+
+                Clock.yield();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
-            Clock.yield();
         }
     }
 
@@ -175,8 +175,13 @@ abstract public class Robot {
     protected boolean moveToDodgeBullet() throws GameActionException {
         MapLocation[] locs = potentialDodgeLocations(POTENTIAL_LOC_GRANULARITY);
         if (locs.length == 0) return false;
-        rc.move(locs[0]);
-        return true;
+        for (int i = locs.length -1; i >= 0; i--) {
+            if (rc.canMove(locs[i])) {
+                rc.move(locs[i]);
+                return true;
+            }
+        }
+        return false;
     }
 
     protected void initRobotState() throws GameActionException {
@@ -219,7 +224,7 @@ abstract public class Robot {
     }
 
     private RobotInfo[] filterNearbyBots(Team team) {
-        return Arrays.stream(nearbyBots).filter(b -> !b.team.equals(team)).toArray(RobotInfo[]::new);
+        return Arrays.stream(nearbyBots).filter(b -> b.team.equals(team)).toArray(RobotInfo[]::new);
     }
 
     private MapLocation[] potentialDodgeLocations(double granularity) throws GameActionException {
