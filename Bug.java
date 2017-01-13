@@ -44,12 +44,22 @@ public class Bug {
     }
 
 
-    public Direction nextStride(MapLocation myLoc) throws GameActionException {
+    public Direction nextStride(MapLocation myLoc, TreeInfo[] nearbyTrees) throws GameActionException {
         myLocation = myLoc;
+
+        if (state == BugState.ON_WALL) {
+            boolean anyClose = false;
+            for (TreeInfo ti : nearbyTrees) {
+                if (ti.location.distanceSquaredTo(myLocation) > myType.strideRadius + myType.bodyRadius + ti.radius) {
+                    anyClose = true;
+                    break;
+                }
+            }
+            if (!anyClose) setGoal(myLocation, goal, quitThresh);
+        }
 
 
         if (currentMLineContains(myLocation)) {
-
             if (rc.getID() == 10140 && rc.getRoundNum() < 231 ) System.out.println("state" + state.toString());
             if (startLocation != null && myLocation.distanceSquaredTo(startLocation) >= 2.0 ) {
                 state = BugState.ON_MLINE;
@@ -79,11 +89,11 @@ public class Bug {
         return null;
     }
 
-    private Direction resetWanderer() throws GameActionException {
-        setGoal(myLocation, goal, quitThresh);
-        if (rc.getID() == 10140 && rc.getRoundNum() < 231) System.out.println("resetWanderer");
-        return nextStride(myLocation);
-    }
+//    private Direction resetWanderer() throws GameActionException {
+//        setGoal(myLocation, goal, quitThresh);
+//        if (rc.getID() == 10140 && rc.getRoundNum() < 231) System.out.println("resetWanderer");
+//        return nextStride(myLocation);
+//    }
 
     //get the next location on the mLine and try to move there
     private Direction moveOnMLine() throws GameActionException {

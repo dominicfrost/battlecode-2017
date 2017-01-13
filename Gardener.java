@@ -52,33 +52,33 @@ public class Gardener extends Robot {
     }
 
     protected void doTurn() throws GameActionException {
-        if (tryDodge()) return; // don't try and plant or build if i'm dodgin mfkas
-        saveThePoorTrees();
-
-        debug("Gardener state: " + state);
-        switch(state) {
+//        if (tryDodge()) return; // don't try and plant or build if i'm dodgin mfkas
+//        saveThePoorTrees();
+//
+//        debug("Gardener state: " + state);
+//        switch(state) {
 //            case SPAWNING_SCOUTS:
 //                if (rc.canBuildRobot(RobotType.SCOUT, Direction.getNorth())) {
 //                    rc.buildRobot(RobotType.SCOUT, Direction.getNorth());
 //                }
-            case GOING_HOME:
-                goHome();
-                break;
-            case MOVING_TO_PLANTING_LOCATION:
-                moveToOrPlant(destinationPlantCenter, destinationPlanterCenter);
-                break;
-            case TENDING:
-                if (tryPlantTree()) return;
-                if (tryBuildBot()) return;
-        }
+//            case GOING_HOME:
+//                goHome();
+//                break;
+//            case MOVING_TO_PLANTING_LOCATION:
+//                moveToOrPlant(destinationPlantCenter, destinationPlanterCenter);
+//                break;
+//            case TENDING:
+//                if (tryPlantTree()) return;
+//                if (tryBuildBot()) return;
+//        }
 
-//        if (!bugger.hasGoal()) {
-//            bugger.setGoal(location, home, 20);
-//        }
-//        Direction d = bugger.nextStride(location);
-//        if (d != null && rc.canMove(d)) {
-//            rc.move(d);
-//        }
+        if (!bugger.hasGoal()) {
+            bugger.setGoal(location, home, 20);
+        }
+        Direction d = bugger.nextStride(location, nearbyTrees);
+        if (d != null && rc.canMove(d)) {
+            rc.move(d);
+        }
     }
 
     private void saveThePoorTrees() throws GameActionException {
@@ -88,7 +88,7 @@ public class Gardener extends Robot {
     }
 
     private void goHome() throws GameActionException {
-        Direction next = bugger.nextStride(location);
+        Direction next = bugger.nextStride(location, nearbyTrees);
         if (next != null && rc.canMove(next)) rc.move(next);
         if (location.distanceSquaredTo(home) <= IM_HOME) setTending();
     }
