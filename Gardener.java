@@ -98,13 +98,13 @@ public class Gardener extends Robot {
     private void spawnUnitsWithThresholds(float scoutThreshold, float lumberjackThreshold, float soldierThreshold, float tankThreshold) throws GameActionException {
         double r = Math.random();
         if (r < scoutThreshold) {
-            trySpawn(RobotType.SCOUT, Direction.getNorth());
+            trySpawn(RobotType.SCOUT, spawnLocationFromGarden());
         } else if (r < lumberjackThreshold) {
-            trySpawn(RobotType.LUMBERJACK, Direction.getNorth());
+            trySpawn(RobotType.LUMBERJACK, spawnLocationFromGarden());
         } else if (r < soldierThreshold) {
-            trySpawn(RobotType.SOLDIER, Direction.getNorth());
+            trySpawn(RobotType.SOLDIER, spawnLocationFromGarden());
         } else if (r < tankThreshold) {
-            trySpawn(RobotType.TANK, Direction.getNorth());
+            trySpawn(RobotType.TANK, spawnLocationFromGarden());
         }
     }
 
@@ -134,9 +134,8 @@ public class Gardener extends Robot {
     private void atGarden() throws GameActionException {
         waterTree();
         if (shouldPlantTree() && plantTree()) return;
-
-        RobotType t = getBuildType();
-        if (shouldBuildBot(t)) tryBuildBot(t);
+        System.out.println("FUCK");
+        spawnUnits();
     }
 
 //    private void setMovingToSpawn() {
@@ -207,21 +206,8 @@ public class Gardener extends Robot {
         return true;
     }
 
-    private boolean shouldBuildBot(RobotType t) {
-        if (!isBuildReady) return false;
-        if (!rc.hasRobotBuildRequirements(t)) return false;
-        return true;
+    private Direction spawnLocationFromGarden() {
+        return Direction.getNorth().rotateRightDegrees(4 * 72);
     }
-
-
-    private boolean tryBuildBot(RobotType rt) throws GameActionException {
-        spawnUnits();
-        return true;
-    }
-
-    private RobotType getBuildType() {
-        return RobotType.SCOUT;
-    }
-
 }
 
