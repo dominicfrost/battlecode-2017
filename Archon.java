@@ -2,8 +2,7 @@ package battlecode2017;
 import battlecode.common.*;
 
 public class Archon extends Robot {
-    private final int ROUNDS_PER_GARDENER = 50;
-    private final int RANDOM_MOVE_GRANULARITY = 72;
+    private final int ROUNDS_PER_GARDENER = 500;
 
     private Bug bugger;
     private int buildCount;
@@ -38,25 +37,6 @@ public class Archon extends Robot {
 //            staySafeAroundMyGardener();
 //        }
         randomSafeMove();
-    }
-
-    private void randomSafeMove() throws GameActionException {
-        Direction toMove = null;
-        Direction next;
-        float nextHealth;
-        float minHealth = Float.MAX_VALUE;
-
-        Direction startDir = randomDirection();
-        for (int i = 0; i < 360; i += RANDOM_MOVE_GRANULARITY) {
-            next = startDir.rotateRightDegrees(i);
-            nextHealth = damageAtLocation(location.add(next));
-            if (rc.canMove(next) && nextHealth < minHealth) {
-                toMove = next;
-                minHealth = nextHealth;
-            }
-        }
-
-        if (toMove != null) rc.move(toMove);
     }
 
     private void staySafeAroundMyGardener() {

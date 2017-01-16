@@ -14,6 +14,7 @@ abstract public class Robot {
     private final int CIRCLING_GRANULARITY = 8;
     private final float CIRCLING_DEGREE_INTERVAL = 360.0F / CIRCLING_GRANULARITY;
     private final int TRY_MOVE_DEGREE_OFFSET = 10;
+    private final int RANDOM_MOVE_GRANULARITY = 72;
 
     private final int SPAWN_SEARCH_DEGREE = 30;
     private final float SPAWN_SEARCH_DEGREE_INTERVAL = 360.0F / SPAWN_SEARCH_DEGREE;
@@ -62,7 +63,7 @@ abstract public class Robot {
     }
 
     protected void debugIndicator(MapLocation l) throws GameActionException {
-        if (debugCheck() && rc.onTheMap(l)) rc.setIndicatorDot(l, 0,0,0);
+        if (debugCheck() && rc.onTheMap(l)) rc.setIndicatorDot(l, 0, 0, 0);
     }
 
     protected boolean debugCheck() {
@@ -80,14 +81,14 @@ abstract public class Robot {
 
         // Now try a bunch of similar angles
         int currentCheck = 1;
-        while(currentCheck<=checksPerSide) {
+        while (currentCheck <= checksPerSide) {
             // Try the offset of the left side
-            if(rc.canMove(dir.rotateLeftDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck))) {
+            if (rc.canMove(dir.rotateLeftDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck))) {
                 rc.move(dir.rotateLeftDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck));
                 return true;
             }
             // Try the offset on the right side
-            if(rc.canMove(dir.rotateRightDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck))) {
+            if (rc.canMove(dir.rotateRightDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck))) {
                 rc.move(dir.rotateRightDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck));
                 return true;
             }
@@ -108,14 +109,15 @@ abstract public class Robot {
         for (int i = 0; i < CIRCLING_GRANULARITY; i++) {
             nextDir = nextDir.rotateLeftDegrees(CIRCLING_DEGREE_INTERVAL * i);
             nextLoc = center.add(nextDir, distanceToCenter);
-            if (rc.canSenseAllOfCircle(nextLoc, revolverRadius) && rc.onTheMap(nextLoc) && !rc.isCircleOccupied(nextLoc, revolverRadius)  && !rc.isCircleOccupied(nextLoc, revolverRadius)) return nextLoc;
+            if (rc.canSenseAllOfCircle(nextLoc, revolverRadius) && rc.onTheMap(nextLoc) && !rc.isCircleOccupied(nextLoc, revolverRadius) && !rc.isCircleOccupied(nextLoc, revolverRadius))
+                return nextLoc;
         }
 
         return null;
     }
 
     protected float convertCoordinateFromBroadcast(int v) throws GameActionException {
-         return ( (float) v ) / BROADCAST_FLOAT_MULTIPLIER;
+        return ((float) v) / BROADCAST_FLOAT_MULTIPLIER;
     }
 
     protected int convertCoordinateToBroadcast(float v) throws GameActionException {
@@ -176,7 +178,7 @@ abstract public class Robot {
     protected boolean moveToDodgeBullet() throws GameActionException {
         MapLocation[] locs = potentialDodgeLocations(POTENTIAL_LOC_GRANULARITY);
         if (locs.length == 0) return false;
-        for (int i = locs.length -1; i >= 0; i--) {
+        for (int i = locs.length - 1; i >= 0; i--) {
             if (rc.canMove(locs[i])) {
                 rc.move(locs[i]);
                 return true;
@@ -186,7 +188,7 @@ abstract public class Robot {
     }
 
     protected static Direction randomDirection() {
-        return new Direction((float)Math.random() * 2 * (float)Math.PI);
+        return new Direction((float) Math.random() * 2 * (float) Math.PI);
     }
 
     protected void initRobotState() throws GameActionException {
@@ -206,7 +208,6 @@ abstract public class Robot {
         nearbyTrees = rc.senseNearbyTrees();
         bulletCount = rc.getTeamBullets();
     }
-
 
 
     private MapLocation home() throws GameActionException {
@@ -248,8 +249,6 @@ abstract public class Robot {
         return Arrays.stream(locs).filter(l -> l != null).toArray(MapLocation[]::new);
     }
 
-
-
     protected Direction getBuildDirection(RobotType t) {
         Direction dir;
         for (int i = 0; i < SPAWN_SEARCH_DEGREE_INTERVAL; i++) {
@@ -257,5 +256,24 @@ abstract public class Robot {
             if (rc.canBuildRobot(t, dir)) return dir;
         }
         return null;
+    }
+
+    protected void randomSafeMove() throws GameActionException {
+        Direction toMove = null;
+        Direction next;
+        float nextHealth;
+        float minHealth = Float.MAX_VALUE;
+
+        Direction startDir = randomDirection();
+        for (int i = 0; i < 360; i += RANDOM_MOVE_GRANULARITY) {
+            next = startDir.rotateRightDegrees(i);
+            nextHealth = damageAtLocation(location.add(next));
+            if (rc.canMove(next) && nextHealth < minHealth) {
+                toMove = next;
+                minHealth = nextHealth;
+            }
+        }
+
+        if (toMove != null) rc.move(toMove);
     }
 }

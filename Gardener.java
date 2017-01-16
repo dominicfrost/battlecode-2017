@@ -79,32 +79,36 @@ public class Gardener extends Robot {
     }
 
     private void spawnUnits() throws GameActionException {
-        switch(socialClass) {
-            case LOWER:
-                if (numBullets < 200) return;
-                spawnUnitsWithThresholds(30, 60, 100, 0);
-                break;
-            case MIDDLE:
-                if (numBullets < 300) return;
-                spawnUnitsWithThresholds(10, 20, 100, 0);
-                break;
-            case UPPER:
-                if (numBullets < 500) return;
-                spawnUnitsWithThresholds(10, 20, 50, 100);
-                break;
-        }
+//        switch(socialClass) {
+//            case LOWER:
+//                if (numBullets < 200) return;
+//                spawnUnitsWithThresholds(30, 60, 100, 0);
+//                break;
+//            case MIDDLE:
+//                if (numBullets < 300) return;
+//                spawnUnitsWithThresholds(10, 20, 100, 0);
+//                break;
+//            case UPPER:
+//                if (numBullets < 500) return;
+//                spawnUnitsWithThresholds(10, 20, 50, 100);
+//                break;
+//        }
+        spawnUnitsWithThresholds(0, 5, 0, 0);
     }
 
     private void spawnUnitsWithThresholds(float scoutThreshold, float lumberjackThreshold, float soldierThreshold, float tankThreshold) throws GameActionException {
         double r = Math.random();
-        if (r < scoutThreshold) {
-            trySpawn(RobotType.SCOUT, spawnLocationFromGarden());
-        } else if (r < lumberjackThreshold) {
+//        if (r < scoutThreshold) {
+//            trySpawn(RobotType.SCOUT, spawnLocationFromGarden());
+//        } else if (r < lumberjackThreshold) {
+//            trySpawn(RobotType.LUMBERJACK, spawnLocationFromGarden());
+//        } else if (r < soldierThreshold) {
+//            trySpawn(RobotType.SOLDIER, spawnLocationFromGarden());
+//        } else if (r < tankThreshold) {
+//            trySpawn(RobotType.TANK, spawnLocationFromGarden());
+//        }
+        if (r < lumberjackThreshold) {
             trySpawn(RobotType.LUMBERJACK, spawnLocationFromGarden());
-        } else if (r < soldierThreshold) {
-            trySpawn(RobotType.SOLDIER, spawnLocationFromGarden());
-        } else if (r < tankThreshold) {
-            trySpawn(RobotType.TANK, spawnLocationFromGarden());
         }
     }
 
@@ -134,7 +138,6 @@ public class Gardener extends Robot {
     private void atGarden() throws GameActionException {
         waterTree();
         if (shouldPlantTree() && plantTree()) return;
-        System.out.println("FUCK");
         spawnUnits();
     }
 
