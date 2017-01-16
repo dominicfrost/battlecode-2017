@@ -2,7 +2,9 @@ package battlecode2017;
 import battlecode.common.*;
 
 public class Archon extends Robot {
-    private final int GARDENERS_PER_ROUND = 3;
+    private final int ROUNDS_PER_GARDENER = 50;
+    private final int RANDOM_MOVE_GRANULARITY = 72;
+
     private Bug bugger;
     private int buildCount;
     private RobotInfo myGardener;
@@ -29,16 +31,32 @@ public class Archon extends Robot {
     }
 
     private void moveToSafestLocation() throws GameActionException {
-        if (myGardener == null || !rc.canSenseRobot(myGardener.ID)) lookForGardener();
-        if (myGardener == null) {
-            randomSafeMove();
-        } else {
-            staySafeAroundMyGardener();
-        }
+//        if (myGardener == null || !rc.canSenseRobot(myGardener.ID)) lookForGardener();
+//        if (myGardener == null) {
+//            randomSafeMove();
+//        } else {
+//            staySafeAroundMyGardener();
+//        }
+        randomSafeMove();
     }
 
-    private void randomSafeMove() {
+    private void randomSafeMove() throws GameActionException {
+        Direction toMove = null;
+        Direction next;
+        float nextHealth;
+        float minHealth = Float.MAX_VALUE;
 
+        Direction startDir = randomDirection();
+        for (int i = 0; i < 360; i += RANDOM_MOVE_GRANULARITY) {
+            next = startDir.rotateRightDegrees(i);
+            nextHealth = damageAtLocation(location.add(next));
+            if (rc.canMove(next) && nextHealth < minHealth) {
+                toMove = next;
+                minHealth = nextHealth;
+            }
+        }
+
+        if (toMove != null) rc.move(toMove);
     }
 
     private void staySafeAroundMyGardener() {
@@ -70,7 +88,7 @@ public class Archon extends Robot {
     }
 
     private boolean shouldHireGardener() {
-        return rc.getRoundNum() / buildCount >= GARDENERS_PER_ROUND && rc.hasRobotBuildRequirements(RobotType.GARDENER);
+        return (rc.getRoundNum() + ROUNDS_PER_GARDENER) / buildCount >= ROUNDS_PER_GARDENER && rc.hasRobotBuildRequirements(RobotType.GARDENER);
     }
 
     private Direction getHireDirection() {

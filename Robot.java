@@ -99,18 +99,15 @@ abstract public class Robot {
         return false;
     }
 
+    // Used to find a location to stand if you want to build something at location center
     protected MapLocation findSpotAroundCircle(MapLocation center, float centerRadius, float revolverRadius) throws GameActionException {
         float distanceToCenter = centerRadius + revolverRadius;
-        debug("findSpotAroundCircle\n  center: " + center.toString());
 
         MapLocation nextLoc;
         Direction nextDir = Direction.getEast();
         for (int i = 0; i < CIRCLING_GRANULARITY; i++) {
             nextDir = nextDir.rotateLeftDegrees(CIRCLING_DEGREE_INTERVAL * i);
-            debug("  nextDir " + nextDir.toString());
             nextLoc = center.add(nextDir, distanceToCenter);
-            debug("  nextLoc " + nextLoc.toString());
-            debugIndicator(nextLoc);
             if (rc.canSenseAllOfCircle(nextLoc, revolverRadius) && rc.onTheMap(nextLoc) && !rc.isCircleOccupied(nextLoc, revolverRadius)  && !rc.isCircleOccupied(nextLoc, revolverRadius)) return nextLoc;
         }
 
@@ -123,6 +120,10 @@ abstract public class Robot {
 
     protected int convertCoordinateToBroadcast(float v) throws GameActionException {
         return (int) (v * BROADCAST_FLOAT_MULTIPLIER);
+    }
+
+    protected float damageAtLocation(MapLocation loc) {
+        return 0F;
     }
 
 
@@ -182,6 +183,10 @@ abstract public class Robot {
             }
         }
         return false;
+    }
+
+    protected static Direction randomDirection() {
+        return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
 
     protected void initRobotState() throws GameActionException {
