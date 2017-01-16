@@ -2,7 +2,10 @@ package battlecode2017;
 import battlecode.common.*;
 
 public class Archon extends Robot {
+    private final int GARDENERS_PER_ROUND = 3;
     private Bug bugger;
+    private int buildCount;
+    private RobotInfo myGardener;
 
     Archon(RobotController _rc) {
         super(_rc);
@@ -12,32 +15,71 @@ public class Archon extends Robot {
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
         bugger = new Bug(rc);
+        buildCount = 0;
+    }
+
+    @Override
+    protected void initRoundState() {
+        super.initRoundState();
     }
 
     protected void doTurn() throws GameActionException {
-//        if (tryDodge()) return;
-
-        if (trySpawnGardener()) return;
-
-        Direction d = location.directionTo(home);
-        if (d == null) {
-            d = Direction.getNorth();
-        }
-        tryMove(d.opposite());
+        trySpawnGardener();
+        moveToSafestLocation();
     }
 
-    private boolean trySpawnGardener() throws GameActionException {
+    private void moveToSafestLocation() throws GameActionException {
+        if (myGardener == null || !rc.canSenseRobot(myGardener.ID)) lookForGardener();
+        if (myGardener == null) {
+            randomSafeMove();
+        } else {
+            staySafeAroundMyGardener();
+        }
+    }
+
+    private void randomSafeMove() {
+
+    }
+
+    private void staySafeAroundMyGardener() {
+        Direction toMove = safestLocationAroundMyGarden();
+    }
+
+    private Direction safestLocationAroundMyGarden(BulletInfo[] bullets, MapLocation startLocation) {
+        Direction toGardener = location.directionTo(myGardener);
+        for ()
+    }
+
+    private int healthWouldILose(int i) {
+        float health = 0F;
+        Bug dog = new Bug(rc);
+        MapLocation dogLoc = location;
+        for (int i = 0; i < roundsbulletsinmysensorrangecantaketohitme; i++) {
+            health += healthWouldILoseInRound(int i);
+            location += Move
+        }
+    }
+
+    private void lookForGardener() {
+        for (RobotInfo r : nearbyAllies) {
+            if (r.type == RobotType.GARDENER) {
+                myGardener = r;
+            }
+        }
+    }
+
+    private void trySpawnGardener() throws GameActionException {
         if (shouldHireGardener()) {
             Direction dir = getHireDirection();
-            if (dir != null) rc.hireGardener(dir);
-            return true;
+            if (dir != null) {
+                rc.hireGardener(dir);
+                buildCount++;
+            }
         }
-
-        return false;
     }
 
     private boolean shouldHireGardener() {
-        return rc.hasRobotBuildRequirements(RobotType.GARDENER);
+        return rc.getRoundNum() / buildCount >= GARDENERS_PER_ROUND && rc.hasRobotBuildRequirements(RobotType.GARDENER);
     }
 
     private Direction getHireDirection() {
