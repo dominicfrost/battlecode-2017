@@ -70,8 +70,4 @@ public class Scout extends Robot {
             }
         }
     }
-
-    static Direction randomDirection() {
-        return new Direction((float)Math.random() * 2 * (float)Math.PI);
-    }
 }

@@ -96,15 +96,15 @@ public class Gardener extends Robot {
     }
 
     private void spawnUnitsWithThresholds(float scoutThreshold, float lumberjackThreshold, float soldierThreshold, float tankThreshold) throws GameActionException {
-        double r = Math.random();
+        double r = Math.random() * 100;
         if (r < scoutThreshold) {
-            trySpawn(RobotType.SCOUT, Direction.getNorth());
+            trySpawn(RobotType.SCOUT, spawnLocationFromGarden());
         } else if (r < lumberjackThreshold) {
-            trySpawn(RobotType.LUMBERJACK, Direction.getNorth());
+            trySpawn(RobotType.LUMBERJACK, spawnLocationFromGarden());
         } else if (r < soldierThreshold) {
-            trySpawn(RobotType.SOLDIER, Direction.getNorth());
+            trySpawn(RobotType.SOLDIER, spawnLocationFromGarden());
         } else if (r < tankThreshold) {
-            trySpawn(RobotType.TANK, Direction.getNorth());
+            trySpawn(RobotType.TANK, spawnLocationFromGarden());
         }
     }
 
@@ -134,9 +134,7 @@ public class Gardener extends Robot {
     private void atGarden() throws GameActionException {
         waterTree();
         if (shouldPlantTree() && plantTree()) return;
-
-        RobotType t = getBuildType();
-        if (shouldBuildBot(t)) tryBuildBot(t);
+        spawnUnits();
     }
 
 //    private void setMovingToSpawn() {
@@ -174,8 +172,8 @@ public class Gardener extends Robot {
         MapLocation nextLoc;
         Direction nextDir;
         TreeInfo tree;
-        for (int i = 0; i < 4; i++) {
-            nextDir = Direction.getNorth().rotateRightDegrees(i * 72);
+        for (int i = 0; i < 5; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
             nextLoc = gardenLocation.add(nextDir, myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS);
             tree = rc.senseTreeAtLocation(nextLoc);
             if (tree != null && tree.team.equals(myTeam) && rc.canWater(nextLoc) && tree.health < waterLocHealth) {
@@ -190,8 +188,8 @@ public class Gardener extends Robot {
 
     private boolean plantTree() throws GameActionException {
         Direction nextDir;
-        for (int i = 0; i < 4; i++) {
-            nextDir = Direction.getNorth().rotateRightDegrees(i * 72);
+        for (int i = 0; i < 5; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
             if (rc.canPlantTree(nextDir)) {
                 rc.plantTree(nextDir);
                 return true;
@@ -207,21 +205,8 @@ public class Gardener extends Robot {
         return true;
     }
 
-    private boolean shouldBuildBot(RobotType t) {
-        if (!isBuildReady) return false;
-        if (!rc.hasRobotBuildRequirements(t)) return false;
-        return true;
+    private Direction spawnLocationFromGarden() {
+        return Direction.getNorth().rotateRightDegrees(5 * 60);
     }
-
-
-    private boolean tryBuildBot(RobotType rt) throws GameActionException {
-        spawnUnits();
-        return true;
-    }
-
-    private RobotType getBuildType() {
-        return RobotType.SCOUT;
-    }
-
 }
 
