@@ -4,6 +4,7 @@ import battlecode.common.*;
 public class Scout extends Robot {
     Direction scoutingDirection;
 
+
     Scout(RobotController _rc) {
         super(_rc);
     }
@@ -20,6 +21,8 @@ public class Scout extends Robot {
             scoutingDirection = randomDirection();
         }
         tryMove(scoutingDirection);
+
+        determineAreasOfInterest();
     }
 
     protected boolean tryMove(Direction dir) throws GameActionException {
@@ -40,6 +43,32 @@ public class Scout extends Robot {
             }
         }
         return super.tryMove(dir);
+    }
+
+    private void determineAreasOfInterest() throws GameActionException {
+        if (nearbyEnemies.length > 3) {
+            int currentRoundNum = rc.getRoundNum();
+            // write to the first AOI channel that is stale ( > 100 rounds old)
+            DecodedLocation loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_1));
+            if (loc.roundNum == 0 || currentRoundNum - loc.roundNum > 100) {
+                System.out.println("broadcasting AOI on channel 1");
+                rc.broadcast(Coms.AREA_OF_INTEREST_1, Coms.encodeLocation(location, currentRoundNum));
+                return;
+            }
+
+            loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_2));
+            if (loc.roundNum == 0 || currentRoundNum - loc.roundNum > 100) {
+                System.out.println("broadcasting AOI on channel 2");
+                rc.broadcast(Coms.AREA_OF_INTEREST_2, Coms.encodeLocation(location, currentRoundNum));
+                return;
+            }
+
+            loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_3));
+            if (loc.roundNum == 0 || currentRoundNum - loc.roundNum > 100) {
+                System.out.println("broadcasting AOI on channel 3");
+                rc.broadcast(Coms.AREA_OF_INTEREST_3, Coms.encodeLocation(location, currentRoundNum));
+            }
+        }
     }
 
     static Direction randomDirection() {
