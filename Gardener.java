@@ -4,7 +4,19 @@ import jdk.nashorn.internal.ir.annotations.Ignore;
 
 import java.util.*;
 
+enum SocialClass {
+    LOWER,
+    MIDDLE,
+    UPPER
+}
+
 public class Gardener extends Robot {
+
+    // HOW RICH WE ARE !!!!!
+    private final int MIDDLE_CLASS_THRESHOLD = 20;
+    private final int UPPER_CLASS_THRESHOLD = 40;
+
+
     private final int BUILD_TO_PLANT_MODULUS = 3;
     private final int MAX_PLANT_REMAINDER = 3;
     private final float STOP_PLANTING_BULLET_COUNT = 100000F;
@@ -26,9 +38,12 @@ public class Gardener extends Robot {
     private final String TENDING = "TENDING";
     private final String MOVING_TO_PLANTING_LOCATION = "MOVING_TO_PLANTING_LOCATION";
     private final String GOING_HOME = "GOING_HOME";
-//    private final String SPAWNING_SCOUTS = "SPAWNING_SCOUTS";
+    private final String SPAWNING= "SPAWNING";
 
     private Bug bugger;
+
+    private SocialClass socialClass;
+    private float numBullets;
 
     Gardener(RobotController _rc) {
         super(_rc);
@@ -39,7 +54,8 @@ public class Gardener extends Robot {
         super.initRobotState();
         buildCount = 0;
         plantVertically = true;
-        state = GOING_HOME;
+//        state = GOING_HOME;
+        state = SPAWNING;
         bugger = new Bug(rc);
         bugger.setGoal(rc.getLocation(), home, 20);
     }
@@ -47,38 +63,86 @@ public class Gardener extends Robot {
     @Override
     protected void initRoundState() {
         super.initRoundState();
+
+        int treeCount = rc.getTreeCount();
+        if (treeCount < MIDDLE_CLASS_THRESHOLD) {
+            socialClass = SocialClass.LOWER;
+        } else if (treeCount < UPPER_CLASS_THRESHOLD) {
+            socialClass = SocialClass.MIDDLE;
+        } else {
+            socialClass = SocialClass.UPPER;
+        }
+
+        numBullets = rc.getTeamBullets();
         isBuildReady = rc.isBuildReady();
         Arrays.sort(nearbyTrees, new TreeComparator(location));
     }
 
-    protected void doTurn() throws GameActionException {
-//        if (tryDodge()) return; // don't try and plant or build if i'm dodgin mfkas
-//        saveThePoorTrees();
-//
-//        debug("Gardener state: " + state);
-//        switch(state) {
-//            case SPAWNING_SCOUTS:
-//                if (rc.canBuildRobot(RobotType.SCOUT, Direction.getNorth())) {
-//                    rc.buildRobot(RobotType.SCOUT, Direction.getNorth());
-//                }
-//            case GOING_HOME:
-//                goHome();
-//                break;
-//            case MOVING_TO_PLANTING_LOCATION:
-//                moveToOrPlant(destinationPlantCenter, destinationPlanterCenter);
-//                break;
-//            case TENDING:
-//                if (tryPlantTree()) return;
-//                if (tryBuildBot()) return;
-//        }
+    private void spawnUnits() throws GameActionException {
+        switch(socialClass) {
+            case LOWER:
+                if (numBullets < 200) return;
+                spawnUnitsWithThresholds(30, 60, 100, 0);
+                break;
+            case MIDDLE:
+                if (numBullets < 300) return;
+                spawnUnitsWithThresholds(10, 20, 100, 0);
+                break;
+            case UPPER:
+                if (numBullets < 500) return;
+                spawnUnitsWithThresholds(10, 20, 50, 100);
+                break;
+        }
+    }
 
-        if (!bugger.hasGoal()) {
-            bugger.setGoal(location, home, 20);
+    private void spawnUnitsWithThresholds(float scoutThreshold, float lumberjackThreshold, float soldierThreshold, float tankThreshold) throws GameActionException {
+        double r = Math.random();
+        if (r < scoutThreshold) {
+            trySpawn(RobotType.SCOUT, Direction.getNorth());
+        } else if (r < lumberjackThreshold) {
+            trySpawn(RobotType.LUMBERJACK, Direction.getNorth());
+        } else if (r < soldierThreshold) {
+            trySpawn(RobotType.SOLDIER, Direction.getNorth());
+        } else if (r < tankThreshold) {
+            trySpawn(RobotType.TANK, Direction.getNorth());
         }
-        Direction d = bugger.nextStride(location, nearbyTrees);
-        if (d != null && rc.canMove(d)) {
-            rc.move(d);
+    }
+
+    private boolean trySpawn(RobotType type, Direction dir) throws GameActionException {
+        if (rc.canBuildRobot(type, dir)) {
+            rc.buildRobot(type, dir);
+            return true;
         }
+        return false;
+    }
+
+
+    protected void doTurn() throws GameActionException {
+        if (tryDodge()) return; // don't try and plant or build if i'm dodgin mfkas
+        saveThePoorTrees();
+
+        debug("Gardener state: " + state);
+        switch(state) {
+            case SPAWNING:
+                spawnUnits();
+            case GOING_HOME:
+                goHome();
+                break;
+            case MOVING_TO_PLANTING_LOCATION:
+                moveToOrPlant(destinationPlantCenter, destinationPlanterCenter);
+                break;
+            case TENDING:
+                if (tryPlantTree()) return;
+                if (tryBuildBot()) return;
+        }
+//
+//        if (!bugger.hasGoal()) {
+//            bugger.setGoal(location, home, 20);
+//        }
+//        Direction d = bugger.nextStride(location, nearbyTrees);
+//        if (d != null && rc.canMove(d)) {
+//            rc.move(d);
+//        }
     }
 
     private void saveThePoorTrees() throws GameActionException {
