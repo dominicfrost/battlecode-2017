@@ -96,7 +96,7 @@ public class Gardener extends Robot {
     }
 
     private void spawnUnitsWithThresholds(float scoutThreshold, float lumberjackThreshold, float soldierThreshold, float tankThreshold) throws GameActionException {
-        double r = Math.random();
+        double r = Math.random() * 100;
         if (r < scoutThreshold) {
             trySpawn(RobotType.SCOUT, spawnLocationFromGarden());
         } else if (r < lumberjackThreshold) {
@@ -134,7 +134,6 @@ public class Gardener extends Robot {
     private void atGarden() throws GameActionException {
         waterTree();
         if (shouldPlantTree() && plantTree()) return;
-        System.out.println("FUCK");
         spawnUnits();
     }
 
@@ -173,8 +172,8 @@ public class Gardener extends Robot {
         MapLocation nextLoc;
         Direction nextDir;
         TreeInfo tree;
-        for (int i = 0; i < 4; i++) {
-            nextDir = Direction.getNorth().rotateRightDegrees(i * 72);
+        for (int i = 0; i < 5; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
             nextLoc = gardenLocation.add(nextDir, myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS);
             tree = rc.senseTreeAtLocation(nextLoc);
             if (tree != null && tree.team.equals(myTeam) && rc.canWater(nextLoc) && tree.health < waterLocHealth) {
@@ -189,8 +188,8 @@ public class Gardener extends Robot {
 
     private boolean plantTree() throws GameActionException {
         Direction nextDir;
-        for (int i = 0; i < 4; i++) {
-            nextDir = Direction.getNorth().rotateRightDegrees(i * 72);
+        for (int i = 0; i < 5; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
             if (rc.canPlantTree(nextDir)) {
                 rc.plantTree(nextDir);
                 return true;
@@ -207,7 +206,7 @@ public class Gardener extends Robot {
     }
 
     private Direction spawnLocationFromGarden() {
-        return Direction.getNorth().rotateRightDegrees(4 * 72);
+        return Direction.getNorth().rotateRightDegrees(5 * 60);
     }
 }
 
