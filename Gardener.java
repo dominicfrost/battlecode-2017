@@ -3,10 +3,18 @@ import battlecode.common.*;
 
 import java.util.*;
 
+enum SocialClass {
+    LOWER,
+    MIDDLE,
+    UPPER
+}
+
 public class Gardener extends Robot {
-    private final int BUILD_TO_PLANT_MODULUS = 3;
-    private final int MAX_PLANT_REMAINDER = 3;
-    private int buildCount;
+
+    // HOW RICH WE ARE !!!!!
+    private final int MIDDLE_CLASS_THRESHOLD = 20;
+    private final int UPPER_CLASS_THRESHOLD = 40;
+
     private boolean isBuildReady;
 
     private MapLocation gardenLocation;
@@ -21,6 +29,9 @@ public class Gardener extends Robot {
         MOVING_TO_GARDEN,
     }
 
+    private SocialClass socialClass;
+    private float numBullets;
+
     Gardener(RobotController _rc) {
         super(_rc);
     }
@@ -28,7 +39,6 @@ public class Gardener extends Robot {
     @Override
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
-        buildCount = 0;
         setFindingGarden();
         bugger = new Bug(rc);
         bugger.setGoal(rc.getLocation(), home, 20);
@@ -37,12 +47,23 @@ public class Gardener extends Robot {
     @Override
     protected void initRoundState() {
         super.initRoundState();
+
+        int treeCount = rc.getTreeCount();
+        if (treeCount < MIDDLE_CLASS_THRESHOLD) {
+            socialClass = SocialClass.LOWER;
+        } else if (treeCount < UPPER_CLASS_THRESHOLD) {
+            socialClass = SocialClass.MIDDLE;
+        } else {
+            socialClass = SocialClass.UPPER;
+        }
+
+        numBullets = rc.getTeamBullets();
         isBuildReady = rc.isBuildReady();
     }
 
     protected void doTurn() throws GameActionException {
         debug("Gardener state: " + state);
-        switch(state) {
+        switch (state) {
             case FINDING_GARDEN:
                 findingGarden();
                 break;
@@ -56,6 +77,45 @@ public class Gardener extends Robot {
                 moveToGarden();
         }
     }
+
+    private void spawnUnits() throws GameActionException {
+        switch(socialClass) {
+            case LOWER:
+                if (numBullets < 200) return;
+                spawnUnitsWithThresholds(30, 60, 100, 0);
+                break;
+            case MIDDLE:
+                if (numBullets < 300) return;
+                spawnUnitsWithThresholds(10, 20, 100, 0);
+                break;
+            case UPPER:
+                if (numBullets < 500) return;
+                spawnUnitsWithThresholds(10, 20, 50, 100);
+                break;
+        }
+    }
+
+    private void spawnUnitsWithThresholds(float scoutThreshold, float lumberjackThreshold, float soldierThreshold, float tankThreshold) throws GameActionException {
+        double r = Math.random();
+        if (r < scoutThreshold) {
+            trySpawn(RobotType.SCOUT, Direction.getNorth());
+        } else if (r < lumberjackThreshold) {
+            trySpawn(RobotType.LUMBERJACK, Direction.getNorth());
+        } else if (r < soldierThreshold) {
+            trySpawn(RobotType.SOLDIER, Direction.getNorth());
+        } else if (r < tankThreshold) {
+            trySpawn(RobotType.TANK, Direction.getNorth());
+        }
+    }
+
+    private boolean trySpawn(RobotType type, Direction dir) throws GameActionException {
+        if (rc.canBuildRobot(type, dir)) {
+            rc.buildRobot(type, dir);
+            return true;
+        }
+        return false;
+    }
+
 
     private void setFindingGarden() throws GameActionException {
         state = GardenerState.FINDING_GARDEN;
@@ -153,13 +213,10 @@ public class Gardener extends Robot {
         return true;
     }
 
+
     private boolean tryBuildBot(RobotType rt) throws GameActionException {
-        Direction toBuild = Direction.getNorth().rotateRightDegrees(288);
-        if (rc.canBuildRobot(rt, toBuild)) {
-            rc.buildRobot(rt, toBuild);
-            return true;
-        }
-        return false;
+        spawnUnits();
+        return true;
     }
 
     private RobotType getBuildType() {

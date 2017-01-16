@@ -36,7 +36,6 @@ public class Bug {
     }
 
     public void setGoal(MapLocation _start, MapLocation _goal, int _quitThresh) {
-        if (rc.getID() == 10140 && rc.getRoundNum() < 231 ) System.out.println("setGoal");
         state = BugState.ON_MLINE;
         quitThresh = _quitThresh;
         start = _start;
@@ -64,7 +63,6 @@ public class Bug {
 
 
         if (currentMLineContains(myLocation)) {
-            if (rc.getID() == 10140 && rc.getRoundNum() < 231 ) System.out.println("state" + state.toString());
             if (startLocation != null && myLocation.distanceSquaredTo(startLocation) >= 2.0 ) {
                 state = BugState.ON_MLINE;
             }
@@ -76,8 +74,6 @@ public class Bug {
         }
 
         Direction dirToMove = bugNextMove();
-        if (rc.getID() == 10140 && rc.getRoundNum() < 231 && dirToMove != null) System.out.println("Dir is " + dirToMove.toString());
-        if (rc.getID() == 10140 && rc.getRoundNum() < 231 && dirToMove == null) System.out.println("Dir is null");
         if (dirToMove == null) setGoal(myLocation, goal, quitThresh);
         return dirToMove;
     }

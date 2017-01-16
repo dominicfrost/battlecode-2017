@@ -15,7 +15,7 @@ public class Archon extends Robot {
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
         bugger = new Bug(rc);
-        buildCount = 0;
+        buildCount = 1;
     }
 
     @Override
@@ -42,22 +42,13 @@ public class Archon extends Robot {
     }
 
     private void staySafeAroundMyGardener() {
-        Direction toMove = safestLocationAroundMyGarden();
+//        Direction toMove = safestLocationAroundMyGarden();
     }
 
     private Direction safestLocationAroundMyGarden(BulletInfo[] bullets, MapLocation startLocation) {
-        Direction toGardener = location.directionTo(myGardener);
-        for ()
-    }
-
-    private int healthWouldILose(int i) {
-        float health = 0F;
-        Bug dog = new Bug(rc);
-        MapLocation dogLoc = location;
-        for (int i = 0; i < roundsbulletsinmysensorrangecantaketohitme; i++) {
-            health += healthWouldILoseInRound(int i);
-            location += Move
-        }
+//        Direction toGardener = location.directionTo(myGardener);
+//        for ()
+        return null;
     }
 
     private void lookForGardener() {
