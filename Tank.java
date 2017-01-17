@@ -3,7 +3,7 @@ package battlecode2017;
 import battlecode.common.*;
 
 public class Tank extends Robot {
-    Soldier(RobotController _rc) {
+    Tank(RobotController _rc) {
         super(_rc);
     }
 
