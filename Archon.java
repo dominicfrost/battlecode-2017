@@ -70,7 +70,7 @@ public class Archon extends Robot {
         Direction toMove = null;
         Direction startDir = location.directionTo(myGardener.location);
         float nextHealth;
-        float minHealth = Float.MAX_VALUE;
+        float minHealth = damageAtLocation(location);
 
         Direction next;
         for (int i = 0; i < 4; i++) {
