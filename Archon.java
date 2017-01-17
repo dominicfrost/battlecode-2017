@@ -18,7 +18,7 @@ public class Archon extends Robot {
     }
 
     @Override
-    protected void initRoundState() {
+    protected void initRoundState() throws GameActionException {
         super.initRoundState();
     }
 

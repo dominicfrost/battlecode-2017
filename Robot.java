@@ -5,6 +5,7 @@ import battlecode.common.*;
 
 abstract public class Robot {
     // DEBUG CONSTANTS
+    private final int BULLETS_TO_WIN = 10000;
     private final int ROBOT_ID = 12314;
     private final int MIN_ROUND = 1304;
     private final int MAX_ROUND = 1305;
@@ -58,7 +59,7 @@ abstract public class Robot {
         myType = rc.getType();
     }
 
-    protected void initRoundState() {
+    protected void initRoundState() throws GameActionException {
         location = rc.getLocation();
         nearbyBullets = rc.senseNearbyBullets();
         nearbyBots = rc.senseNearbyRobots();
@@ -67,6 +68,9 @@ abstract public class Robot {
         nearbyTrees = rc.senseNearbyTrees();
         bulletCount = rc.getTeamBullets();
         nextRoundBullets = advanceBullets(nearbyBullets);
+        if (bulletCount >= BULLETS_TO_WIN) {
+            rc.donate(BULLETS_TO_WIN);
+        }
     }
 
 

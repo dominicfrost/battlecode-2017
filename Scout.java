@@ -9,7 +9,7 @@ public class Scout extends Robot {
         super(_rc);
     }
 
-    protected void initRobotState() throws GameActionException{
+    protected void initRobotState() throws GameActionException {
         scoutingDirection = randomDirection();
         super.initRobotState();
     }

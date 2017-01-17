@@ -15,6 +15,8 @@ public class Gardener extends Robot {
     private final int MIDDLE_CLASS_THRESHOLD = 20;
     private final int UPPER_CLASS_THRESHOLD = 40;
 
+    private final float GARDEN_SPACE = (float) Math.pow((double) GameConstants.BULLET_TREE_RADIUS * 4 + RobotType.GARDENER.bodyRadius * 2, 2);
+
     private boolean isBuildReady;
 
     private MapLocation gardenLocation;
@@ -44,7 +46,7 @@ public class Gardener extends Robot {
     }
 
     @Override
-    protected void initRoundState() {
+    protected void initRoundState() throws GameActionException {
         super.initRoundState();
 
         int treeCount = rc.getTreeCount();
@@ -224,16 +226,26 @@ public class Gardener extends Robot {
         for (int i = 0; i < 5; i++) {
             nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
             nextLoc = loc.add(nextDir, myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS);
+            if (!rc.onTheMap(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
+            if (locInGardenerRange(nextLoc)) return false;
             if (!rc.canSenseAllOfCircle(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
             if (rc.isCircleOccupiedExceptByThisRobot(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
         }
         return true;
     }
 
+    private boolean locInGardenerRange(MapLocation nextLoc) {
+        for (RobotInfo ri : nearbyAllies) {
+            if (ri.type == RobotType.GARDENER) {
+                if (nextLoc.distanceSquaredTo(ri.location) <= GARDEN_SPACE) return true;
+            }
+        }
+        return false;
+    }
+
     private boolean shouldPlantTree() {
         if (!isBuildReady) return false;
         if (!rc.hasTreeBuildRequirements()) return false;
-//        if (buildCount % BUILD_TO_PLANT_MODULUS > MAX_PLANT_REMAINDER) return false;
         return true;
     }
 
