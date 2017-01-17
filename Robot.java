@@ -23,6 +23,9 @@ abstract public class Robot {
     private final int HOME_X = 0;
     private final int HOME_Y = 1;
 
+    protected final int PESKYTREES = 500;
+
+
     protected Random rand;
     protected Team myTeam;
     protected Team enemyTeam;
@@ -275,5 +278,13 @@ abstract public class Robot {
         }
 
         if (toMove != null) rc.move(toMove);
+    }
+
+    protected boolean checkForGoodies(TreeInfo t) throws GameActionException{
+        if (rc.canShake(t.location) && (t.getContainedBullets() > 0 || t.getContainedRobot() != null)){
+            rc.shake(t.location);
+            return true;
+        }
+        return false;
     }
 }

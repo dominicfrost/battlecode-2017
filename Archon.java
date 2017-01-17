@@ -1,5 +1,7 @@
 package battlecode2017;
+
 import battlecode.common.*;
+import java.lang.Math;
 
 public class Archon extends Robot {
     private final int ROUNDS_PER_GARDENER = 500;
@@ -17,6 +19,7 @@ public class Archon extends Robot {
         super.initRobotState();
         bugger = new Bug(rc);
         buildCount = 1;
+        postPeskyTrees();
     }
 
     @Override
@@ -80,5 +83,20 @@ public class Archon extends Robot {
             }
         }
         return null;
+    }
+
+    private void postPeskyTrees() throws GameActionException {
+        TreeInfo[] peskyTrees = rc.senseNearbyTrees(10.0f);
+        int broadcastChannel = PESKYTREES;
+        for (int i = 0; i < peskyTrees.length; i ++){
+            if (peskyTrees[i].getTeam() != rc.getTeam()){
+                MapLocation treeLoc = peskyTrees[i].getLocation();
+                rc.broadcast(broadcastChannel, Math.round(treeLoc.x));
+                rc.broadcast(broadcastChannel + 1, Math.round(treeLoc.y));
+                broadcastChannel += 2;
+            }
+        }
+        rc.broadcast(broadcastChannel, 0);
+        rc.broadcast(broadcastChannel + 1, 0);
     }
 }

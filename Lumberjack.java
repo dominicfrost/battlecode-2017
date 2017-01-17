@@ -5,6 +5,7 @@ public class Lumberjack extends Robot {
 
     private Bug bugger;
     private RobotInfo myLumberJack;
+    private MapLocation targetTreeLoc;
 
     Lumberjack(RobotController _rc) {
         super(_rc);
@@ -14,6 +15,8 @@ public class Lumberjack extends Robot {
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
         bugger = new Bug(rc);
+        targetTreeLoc = getTargetTree();
+        bugger.setGoal(rc.getLocation(), targetTreeLoc, 2);
     }
 
     @Override
@@ -22,56 +25,99 @@ public class Lumberjack extends Robot {
     }
 
     protected void doTurn() throws GameActionException {
+        if (targetTreeLoc == null) {
+            targetTreeLoc = getTargetTree();
+            bugger.setGoal(rc.getLocation(), targetTreeLoc, 2);
+        }
+
         if (!tryDodge()) {
-            randomSafeMove();
-            if (!tryShakeOrCutTrees()){
+            if (!shakeOrCutTrees()){
                 strike();
+            }
+            lumberJackMove();
+        }
+    }
+
+    protected MapLocation getTargetTree() throws GameActionException {
+        MapLocation targetTreeLoc = getNearestPeskyTree();
+        if (targetTreeLoc == null){
+            targetTreeLoc = getNearestTree();
+        }
+        return targetTreeLoc;
+    }
+
+    protected MapLocation getNearestPeskyTree() throws GameActionException {
+        MapLocation closestPeskyTree = null;
+        int broadcast = PESKYTREES;
+        float minDist = 99999999.9f;
+
+        int xLoc = rc.readBroadcast(broadcast);
+        int yLoc = rc.readBroadcast(broadcast + 1);
+
+        while(xLoc != 0 && yLoc != 0){
+            MapLocation newLoc = new MapLocation(xLoc, yLoc);
+
+            float dist = newLoc.distanceSquaredTo(rc.getLocation());
+            if (dist < minDist){
+                minDist = dist;
+                closestPeskyTree = newLoc;
+            }
+            broadcast += 2;
+            xLoc = rc.readBroadcast(broadcast);
+            yLoc = rc.readBroadcast(broadcast + 1);
+        }
+        return closestPeskyTree;
+    }
+
+    protected MapLocation getNearestTree() throws GameActionException{
+        if (nearbyTrees.length < 1){
+            return null;
+        }
+
+        MapLocation nearestTreeLoc = nearbyTrees[0].getLocation();
+        float minDist = nearbyTrees[0].getLocation().distanceSquaredTo(location);
+        for (int i = 1; i < nearbyTrees.length; i++){
+            float dist = nearbyTrees[i].getLocation().distanceSquaredTo(location);
+            if (dist < minDist && nearbyTrees[i].getTeam() != rc.getTeam()){
+                minDist = dist;
+                nearestTreeLoc = nearbyTrees[i].getLocation();
+            }
+        }
+        return nearestTreeLoc;
+    }
+
+    protected void lumberJackMove() throws GameActionException  {
+        if (hasTarget() && rc.getLocation().distanceSquaredTo(targetTreeLoc) < 2.0f){
+            Direction moveDir = bugger.nextStride(rc.getLocation(), rc.senseNearbyTrees());
+            if (moveDir != null) {
+                rc.move(moveDir);
             }
         }
     }
 
-    protected boolean tryShakeOrCutTrees() throws GameActionException {
-        TreeInfo[] nearbyTrees = rc.senseNearbyTrees(2.0f);
-        TreeInfo firstNonFriendlyTree = nearbyTrees[0];
-        boolean canChop = false;
-
-        if (nearbyTrees.length < 1) {
-            return false;
-        }
-
-        for (int i = 0; i < nearbyTrees.length; i++) {
-            TreeInfo t = nearbyTrees[i];
-            if (rc.canShake(t.location) && (t.getContainedBullets() > 0 || t.getContainedRobot() != null)) {
-                rc.shake(t.getLocation());
+    protected boolean shakeOrCutTrees() throws GameActionException {
+        if (hasTarget() && rc.getLocation().distanceSquaredTo(targetTreeLoc) < 2.0f){
+            TreeInfo targetTree = rc.senseTreeAtLocation(targetTreeLoc);
+            if (checkForGoodies(targetTree)){
+                return true;
+            } else if (rc.canChop(targetTree.location)){
+                if (targetTree.getHealth() < 5.0f){
+                    targetTreeLoc = null;
+                }
+                rc.chop(targetTree.location);
                 return true;
             }
-            if (t.getTeam() != rc.getTeam()){
-                firstNonFriendlyTree = t;
-                canChop = true;
-            }
-        }
-
-        if (canChop){
-            rc.chop(firstNonFriendlyTree.location);
-            return true;
         }
         return false;
     }
 
     protected void strike() throws GameActionException{
-        RobotInfo[] nearbyRobots = rc.senseNearbyRobots(2.0f);
-        int friendlies = 0;
-        int baddies = 0;
-
-        for (int i = 0; i < nearbyRobots.length; i ++){
-            if (nearbyRobots[i].getTeam() == rc.getTeam()){
-                friendlies++;
-            } else {
-                baddies++;
-            }
-        }
-        if (baddies > friendlies){
+        if (nearbyEnemies.length > nearbyAllies.length){
             rc.strike();
         }
+    }
+
+    protected boolean hasTarget() throws GameActionException{
+        return targetTreeLoc != null;
     }
 }
