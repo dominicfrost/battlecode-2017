@@ -102,6 +102,10 @@ public class Gardener extends Robot {
             trySpawn(RobotType.SCOUT, spawnLocationFromGarden());
         } else if (r < lumberjackThreshold) {
             trySpawn(RobotType.LUMBERJACK, spawnLocationFromGarden());
+        } else if (r < soldierThreshold) {
+            trySpawn(RobotType.SOLDIER, spawnLocationFromGarden());
+        } else if (r < tankThreshold) {
+            trySpawn(RobotType.TANK, spawnLocationFromGarden());
         }
     }
 
