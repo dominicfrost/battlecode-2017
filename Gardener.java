@@ -83,15 +83,15 @@ public class Gardener extends Robot {
         switch(socialClass) {
             case LOWER:
                 if (numBullets < 200) return;
-                spawnUnitsWithThresholds(30, 0, 100, 0);
+                spawnUnitsWithThresholds(30, 0, 0, 0);
                 break;
             case MIDDLE:
                 if (numBullets < 300) return;
-                spawnUnitsWithThresholds(10, 0, 100, 0);
+                spawnUnitsWithThresholds(10, 0, 0, 0);
                 break;
             case UPPER:
                 if (numBullets < 500) return;
-                spawnUnitsWithThresholds(10, 0, 50, 100);
+                spawnUnitsWithThresholds(10, 0, 0, 0);
                 break;
         }
     }

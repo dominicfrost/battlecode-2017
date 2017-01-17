@@ -4,7 +4,6 @@ import battlecode.common.*;
 public class Scout extends Robot {
     Direction scoutingDirection;
 
-
     Scout(RobotController _rc) {
         super(_rc);
     }
@@ -15,17 +14,18 @@ public class Scout extends Robot {
     }
 
     protected void doTurn() throws GameActionException {
+        determineAreasOfInterest();
         if (tryDodge()) return;
 
         if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
             scoutingDirection = randomDirection();
         }
 
+        if (sitOnGardenerTree()) return;
+
         tryMove(scoutingDirection);
 
         attackNearestEnemy();
-
-        determineAreasOfInterest();
     }
 
     private void determineAreasOfInterest() throws GameActionException {
@@ -52,5 +52,62 @@ public class Scout extends Robot {
                 rc.broadcast(Coms.AREA_OF_INTEREST_3, Coms.encodeLocation(location, currentRoundNum));
             }
         }
+    }
+
+    private boolean sitOnGardenerTree() throws GameActionException {
+        MapLocation attackLoc;
+        float dist;
+        MapLocation closestLoc = null, gardenerLoc = null;
+        float closestDist = Float.MAX_VALUE;
+
+        for (RobotInfo ri : nearbyEnemies) {
+            if (ri.type.equals(RobotType.GARDENER)) {
+                attackLoc = findTreeNextToGardener(ri.location, RobotType.GARDENER.bodyRadius, myType.bodyRadius);
+                if (attackLoc != null) {
+                    dist = location.distanceSquaredTo(attackLoc);
+                    if (dist < closestDist) {
+                        closestLoc = attackLoc;
+                        closestDist = dist;
+                        gardenerLoc = ri.location;
+                    }
+                }
+            }
+        }
+
+        if (closestLoc != null && gardenerLoc != null) {
+            if (!location.equals(closestLoc) && rc.canMove(closestLoc)) rc.move(closestLoc);
+            if (rc.getLocation().equals(closestLoc) && rc.canFireSingleShot()) rc.fireSingleShot(rc.getLocation().directionTo(gardenerLoc));
+            return true;
+        }
+
+        return false;
+    }
+
+    private MapLocation findTreeNextToGardener(MapLocation center, float centerRadius, float revolverRadius) throws GameActionException {
+        float distanceToCenter = centerRadius + revolverRadius;
+        float distanceToCenterSquared = (float) Math.pow(distanceToCenter, 2);
+
+        if (location.distanceSquaredTo(center) <= distanceToCenterSquared + .001) return location;
+
+        MapLocation nextLoc;
+        Direction nextDir = randomDirection();
+        float dist;
+        MapLocation closestLoc = null;
+        float closestDist = Float.MAX_VALUE;
+
+        for (int i = 0; i < 6; i++) {
+            nextDir = nextDir.rotateLeftDegrees(60 * i);
+            nextLoc = center.add(nextDir, distanceToCenter);
+            if (rc.canSenseAllOfCircle(nextLoc, revolverRadius) && rc.onTheMap(nextLoc) && rc.isLocationOccupiedByTree(nextLoc)) {
+                nextLoc = rc.senseTreeAtLocation(nextLoc).location;
+                dist = location.distanceSquaredTo(nextLoc);
+                if (dist < closestDist) {
+                    closestLoc = nextLoc;
+                    closestDist = dist;
+                }
+            }
+        }
+
+        return closestLoc;
     }
 }
