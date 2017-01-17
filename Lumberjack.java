@@ -93,6 +93,7 @@ public class Lumberjack extends Robot {
     protected boolean shakeOrCutTrees() throws GameActionException {
         if (hasTarget() && rc.getLocation().distanceSquaredTo(targetTreeLoc) < 4.0f){
             TreeInfo targetTree = rc.senseTreeAtLocation(targetTreeLoc);
+            if (targetTree == null) return false;
             if (checkForGoodies(targetTree)){
                 rc.shake(targetTreeLoc);
                 return true;
