@@ -13,7 +13,7 @@ abstract public class Robot {
     private final int CIRCLING_GRANULARITY = 8;
     private final float CIRCLING_DEGREE_INTERVAL = 360.0F / CIRCLING_GRANULARITY;
     private final int TRY_MOVE_DEGREE_OFFSET = 10;
-    private final int RANDOM_MOVE_GRANULARITY = 72;
+    private final int RANDOM_MOVE_GRANULARITY = 60;
 
     protected RobotController rc;
     protected Random rand;
