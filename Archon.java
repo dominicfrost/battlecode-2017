@@ -4,7 +4,7 @@ import battlecode.common.*;
 import java.lang.Math;
 
 public class Archon extends Robot {
-    private final int ROUNDS_PER_GARDENER = 50;
+    private final int ROUNDS_PER_GARDENER = 250;
 
     private int buildCount;
     private RobotInfo myGardener;
