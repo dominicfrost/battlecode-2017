@@ -22,7 +22,6 @@ public class Lumberjack extends Robot {
     @Override
     protected void initRoundState() throws GameActionException {
         super.initRoundState();
-
         if (targetTreeLocation == null) {
             targetTreeLocation = getTargetTree();
             bugger.setGoal(rc.getLocation(), targetTreeLocation, 4);
@@ -32,7 +31,7 @@ public class Lumberjack extends Robot {
     protected void doTurn() throws GameActionException {
         if (!tryDodge()) {
             boolean stayAndCut = false;
-            if (rc.canChop(targetTreeLocation)){
+            if (targetTreeLocation != null && rc.canChop(targetTreeLocation)){
                 stayAndCut = true;
             }
             if (!stayAndCut){
@@ -80,8 +79,8 @@ public class Lumberjack extends Robot {
             return null;
         }
 
-        MapLocation nearestTreeLoc = nearbyTrees[0].getLocation();
-        float minDist = nearbyTrees[0].getLocation().distanceSquaredTo(location);
+        MapLocation nearestTreeLoc = null;
+        float minDist = 999999.9f;
         for (int i = 1; i < nearbyTrees.length; i++){
             float dist = nearbyTrees[i].getLocation().distanceSquaredTo(location);
             if (dist < minDist && nearbyTrees[i].getTeam() != rc.getTeam()){

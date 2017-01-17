@@ -107,8 +107,8 @@ public class Archon extends Robot {
     }
 
     private void postPeskyTrees() throws GameActionException {
+        int broadcastChannel = Coms.PESKY_TREES;
         if (nearbyTrees != null) {
-            int broadcastChannel = Coms.PESKY_TREES;
             for (int i = 0; i < nearbyTrees.length; i ++){
                 if (nearbyTrees[i].getTeam() != rc.getTeam()){
                     MapLocation treeLoc = nearbyTrees[i].getLocation();
@@ -117,9 +117,8 @@ public class Archon extends Robot {
                     broadcastChannel += 2;
                 }
             }
-            rc.broadcast(broadcastChannel, 0);
-            rc.broadcast(broadcastChannel + 1, 0);
-
         }
+        rc.broadcast(broadcastChannel, 0);
+        rc.broadcast(broadcastChannel + 1, 0);
     }
 }
