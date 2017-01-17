@@ -3,9 +3,7 @@ import battlecode.common.*;
 
 public class Archon extends Robot {
     private final int ROUNDS_PER_GARDENER = 50;
-    private final int RANDOM_MOVE_GRANULARITY = 72;
 
-    private Bug bugger;
     private int buildCount;
     private RobotInfo myGardener;
 
@@ -16,7 +14,6 @@ public class Archon extends Robot {
     @Override
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
-        bugger = new Bug(rc);
         buildCount = 1;
     }
 
@@ -27,46 +24,13 @@ public class Archon extends Robot {
 
     protected void doTurn() throws GameActionException {
         trySpawnGardener();
-        moveToSafestLocation();
+        if (tryDodge()) return; // think about immediate health
+        moveToSafestLocation(); // think about long term health
     }
 
     private void moveToSafestLocation() throws GameActionException {
-//        if (myGardener == null || !rc.canSenseRobot(myGardener.ID)) lookForGardener();
-//        if (myGardener == null) {
-//            randomSafeMove();
-//        } else {
-//            staySafeAroundMyGardener();
-//        }
-        randomSafeMove();
-    }
-
-    private void randomSafeMove() throws GameActionException {
-        Direction toMove = null;
-        Direction next;
-        float nextHealth;
-        float minHealth = Float.MAX_VALUE;
-
-        Direction startDir = randomDirection();
-        for (int i = 0; i < 360; i += RANDOM_MOVE_GRANULARITY) {
-            next = startDir.rotateRightDegrees(i);
-            nextHealth = damageAtLocation(location.add(next));
-            if (rc.canMove(next) && nextHealth < minHealth) {
-                toMove = next;
-                minHealth = nextHealth;
-            }
-        }
-
-        if (toMove != null) rc.move(toMove);
-    }
-
-    private void staySafeAroundMyGardener() {
-//        Direction toMove = safestLocationAroundMyGarden();
-    }
-
-    private Direction safestLocationAroundMyGarden(BulletInfo[] bullets, MapLocation startLocation) {
-//        Direction toGardener = location.directionTo(myGardener);
-//        for ()
-        return null;
+        if (myGardener == null || !rc.canSenseRobot(myGardener.ID)) lookForGardener();
+        if (myGardener != null) staySafeAroundMyGardener();
     }
 
     private void lookForGardener() {
@@ -100,5 +64,41 @@ public class Archon extends Robot {
             }
         }
         return null;
+    }
+
+    private void staySafeAroundMyGardener() throws GameActionException {
+        Direction toMove = null;
+        Direction startDir = location.directionTo(myGardener.location);
+        float nextHealth;
+        float minHealth = Float.MAX_VALUE;
+
+        Direction next;
+        for (int i = 0; i < 4; i++) {
+            next = startDir.rotateRightDegrees(i * 30);
+            if (!locInGarden(location.add(next)) && rc.canMove(next)) {
+                nextHealth = damageAtLocation(location.add(next));
+                if (nextHealth < minHealth) {
+                    toMove = next;
+                    minHealth = nextHealth;
+                }
+            }
+
+            next = startDir.rotateLeftDegrees(i * 30);
+            if (!locInGarden(location.add(next)) && rc.canMove(next)) {
+                nextHealth = damageAtLocation(location.add(next));
+                if (nextHealth < minHealth) {
+                    toMove = next;
+                    minHealth = nextHealth;
+                }
+            }
+        }
+
+        if (toMove != null) {
+            rc.move(toMove);
+        }
+    }
+
+    private boolean locInGarden(MapLocation loc) {
+        return loc.distanceSquaredTo(myGardener.location) <= myType.bodyRadius + RobotType.GARDENER.bodyRadius + GameConstants.BULLET_TREE_RADIUS;
     }
 }
