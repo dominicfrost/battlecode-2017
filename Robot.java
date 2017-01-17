@@ -5,34 +5,28 @@ import battlecode.common.*;
 
 abstract public class Robot {
     // DEBUG CONSTANTS
-    private final int ROBOT_ID = 11849;
-    private final int MIN_ROUND = 169;
-    private final int MAX_ROUND = 170;
+    private final int ROBOT_ID = 12314;
+    private final int MIN_ROUND = 1304;
+    private final int MAX_ROUND = 1305;
 
-    private final double POTENTIAL_LOC_GRANULARITY = 1.0;
-    private final float BROADCAST_FLOAT_MULTIPLIER = 100F;
+    private final int RANDOM_MOVE_GRANULARITY = 72;
     private final int CIRCLING_GRANULARITY = 8;
     private final float CIRCLING_DEGREE_INTERVAL = 360.0F / CIRCLING_GRANULARITY;
     private final int TRY_MOVE_DEGREE_OFFSET = 10;
 
-    private final int SPAWN_SEARCH_DEGREE = 30;
-    private final float SPAWN_SEARCH_DEGREE_INTERVAL = 360.0F / SPAWN_SEARCH_DEGREE;
-
-    // Broadcast channels
-    private final int HOME_X = 0;
-    private final int HOME_Y = 1;
-
+    protected RobotController rc;
     protected Random rand;
     protected Team myTeam;
     protected Team enemyTeam;
-    protected RobotController rc;
+    protected RobotType myType;
+
     protected MapLocation location;
     protected BulletInfo[] nearbyBullets;
+    protected BulletInfo[] nextRoundBullets;
     protected RobotInfo[] nearbyBots;
     protected RobotInfo[] nearbyEnemies;
     protected RobotInfo[] nearbyAllies;
     protected TreeInfo[] nearbyTrees;
-    protected RobotType myType;
     protected MapLocation home;
     protected float bulletCount;
 
@@ -56,6 +50,25 @@ abstract public class Robot {
             }
         }
     }
+
+    protected void initRobotState() throws GameActionException {
+        rand = new Random();
+        myTeam = rc.getTeam();
+        enemyTeam = myTeam.opponent();
+        myType = rc.getType();
+    }
+
+    protected void initRoundState() {
+        location = rc.getLocation();
+        nearbyBullets = rc.senseNearbyBullets();
+        nearbyBots = rc.senseNearbyRobots();
+        nearbyAllies = filterNearbyBots(myTeam);
+        nearbyEnemies = filterNearbyBots(enemyTeam);
+        nearbyTrees = rc.senseNearbyTrees();
+        bulletCount = rc.getTeamBullets();
+        nextRoundBullets = advanceBullets(nearbyBullets);
+    }
+
 
     protected void debug(String msg) {
         if (debugCheck()) System.out.println(msg);
@@ -99,36 +112,69 @@ abstract public class Robot {
         return false;
     }
 
-    // Used to find a location to stand if you want to build something at location center
-    protected MapLocation findSpotAroundCircle(MapLocation center, float centerRadius, float revolverRadius) throws GameActionException {
-        float distanceToCenter = centerRadius + revolverRadius;
 
-        MapLocation nextLoc;
-        Direction nextDir = Direction.getEast();
-        for (int i = 0; i < CIRCLING_GRANULARITY; i++) {
-            nextDir = nextDir.rotateLeftDegrees(CIRCLING_DEGREE_INTERVAL * i);
-            nextLoc = center.add(nextDir, distanceToCenter);
-            if (rc.canSenseAllOfCircle(nextLoc, revolverRadius) && rc.onTheMap(nextLoc) && !rc.isCircleOccupied(nextLoc, revolverRadius)  && !rc.isCircleOccupied(nextLoc, revolverRadius)) return nextLoc;
+    protected boolean randomSafeMove() throws GameActionException {
+        Direction toMove = null;
+        Direction next;
+        float nextHealth;
+        float minHealth = Float.MAX_VALUE;
+
+        Direction startDir = randomDirection();
+        for (int i = 0; i < 360; i += RANDOM_MOVE_GRANULARITY) {
+            next = startDir.rotateRightDegrees(i);
+            if (rc.canMove(next)) {
+                nextHealth = damageAtLocation(location.add(next));
+                if (nextHealth < minHealth) {
+                    toMove = next;
+                    minHealth = nextHealth;
+                }
+            }
         }
 
-        return null;
-    }
-
-    protected float convertCoordinateFromBroadcast(int v) throws GameActionException {
-         return ( (float) v ) / BROADCAST_FLOAT_MULTIPLIER;
-    }
-
-    protected int convertCoordinateToBroadcast(float v) throws GameActionException {
-        return (int) (v * BROADCAST_FLOAT_MULTIPLIER);
+        if (toMove != null && rc.canMove(toMove)) {
+            rc.move(toMove);
+            return true;
+        }
+        return false;
     }
 
     protected float damageAtLocation(MapLocation loc) {
-        return 0F;
+        float damage = 0F;
+        for (BulletInfo b : nearbyBullets) {
+            if (willCollideLocation(b, loc)) {
+                damage += b.damage;
+            }
+        }
+
+        for (BulletInfo b : nextRoundBullets) {
+            if (willCollideLocation(b, loc)) {
+                damage += b.damage;
+            }
+        }
+
+        return damage;
     }
 
+    protected BulletInfo[] advanceBullets(BulletInfo[] bulletsToAdvance) {
+        BulletInfo[] bullets = new BulletInfo[bulletsToAdvance.length];
+        for (int i = 0; i < bulletsToAdvance.length; i++) {
+            bullets[i] = advanceBullet(bulletsToAdvance[i]);
+        }
+        return bullets;
+    }
+
+    protected BulletInfo advanceBullet(BulletInfo b) {
+        return new BulletInfo(
+            b.ID,
+            b.location.add(b.dir, b.speed),
+            b.dir,
+            b.speed,
+            b.damage
+        );
+    }
 
     protected boolean tryDodge() throws GameActionException {
-        return willAnyBulletsCollideWithMe() && moveToDodgeBullet();
+        return willAnyBulletsCollideWithMe() && randomSafeMove();
     }
 
     protected boolean willAnyBulletsCollideWithMe() {
@@ -142,11 +188,14 @@ abstract public class Robot {
         for (BulletInfo b : nearbyBullets) {
             if (willCollideLocation(b, loc)) return true;
         }
+        for (BulletInfo b : nextRoundBullets) {
+            if (willCollideLocation(b, loc)) return true;
+        }
         return false;
     }
 
     protected boolean willCollideWithMe(BulletInfo bullet) {
-        return willCollideLocation(bullet, location);
+        return willCollideLocation(bullet, location.add(bullet.dir, bullet.speed));
     }
 
     protected boolean willCollideLocation(BulletInfo bullet, MapLocation loc) {
@@ -173,59 +222,9 @@ abstract public class Robot {
         return (perpendicularDist <= rc.getType().bodyRadius);
     }
 
-    protected boolean moveToDodgeBullet() throws GameActionException {
-        MapLocation[] locs = potentialDodgeLocations(POTENTIAL_LOC_GRANULARITY);
-        if (locs.length == 0) return false;
-        for (int i = locs.length -1; i >= 0; i--) {
-            if (rc.canMove(locs[i])) {
-                rc.move(locs[i]);
-                return true;
-            }
-        }
-        return false;
-    }
 
     protected static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
-    }
-
-    protected void initRobotState() throws GameActionException {
-        rand = new Random();
-        home = home();
-        myTeam = rc.getTeam();
-        enemyTeam = myTeam.opponent();
-        myType = rc.getType();
-    }
-
-    protected void initRoundState() {
-        location = rc.getLocation();
-        nearbyBullets = rc.senseNearbyBullets();
-        nearbyBots = rc.senseNearbyRobots();
-        nearbyAllies = filterNearbyBots(myTeam);
-        nearbyEnemies = filterNearbyBots(enemyTeam);
-        nearbyTrees = rc.senseNearbyTrees();
-        bulletCount = rc.getTeamBullets();
-    }
-
-
-
-    private MapLocation home() throws GameActionException {
-        int x = rc.readBroadcast(HOME_X);
-        int y = rc.readBroadcast(HOME_Y);
-
-        // we have not set up a home yet
-        if (x == 0 && y == 0) {
-            return setHome();
-        }
-
-        return new MapLocation(convertCoordinateFromBroadcast(x), convertCoordinateFromBroadcast(y));
-    }
-
-    private MapLocation setHome() throws GameActionException {
-        MapLocation home = rc.getLocation();
-        rc.broadcast(HOME_X, convertCoordinateToBroadcast(home.x));
-        rc.broadcast(HOME_Y, convertCoordinateToBroadcast(home.y));
-        return home;
     }
 
     private RobotInfo[] filterNearbyBots(Team team) {
@@ -248,14 +247,20 @@ abstract public class Robot {
         return Arrays.stream(locs).filter(l -> l != null).toArray(MapLocation[]::new);
     }
 
+    // Used to find a location to stand if you want to build something at location center
+    protected MapLocation findSpotAroundCircle(MapLocation center, float centerRadius, float revolverRadius) throws GameActionException {
+        float distanceToCenter = centerRadius + revolverRadius;
 
-
-    protected Direction getBuildDirection(RobotType t) {
-        Direction dir;
-        for (int i = 0; i < SPAWN_SEARCH_DEGREE_INTERVAL; i++) {
-            dir = Direction.getNorth().rotateRightDegrees(SPAWN_SEARCH_DEGREE * i);
-            if (rc.canBuildRobot(t, dir)) return dir;
+        MapLocation nextLoc;
+        Direction nextDir = randomDirection();
+        for (int i = 0; i < CIRCLING_GRANULARITY; i++) {
+            nextDir = nextDir.rotateLeftDegrees(CIRCLING_DEGREE_INTERVAL * i);
+            nextLoc = center.add(nextDir, distanceToCenter);
+            if (rc.canSenseAllOfCircle(nextLoc, revolverRadius) &&
+                    rc.onTheMap(nextLoc) &&
+                    !rc.isCircleOccupied(nextLoc, revolverRadius)) return nextLoc;
         }
+
         return null;
     }
 

@@ -41,7 +41,6 @@ public class Gardener extends Robot {
         super.initRobotState();
         setFindingGarden();
         bugger = new Bug(rc);
-        bugger.setGoal(rc.getLocation(), home, 20);
     }
 
     @Override
@@ -123,6 +122,11 @@ public class Gardener extends Robot {
 
     private void findingGarden() throws GameActionException {
         gardenLocation = findGarden();
+        if (gardenLocation == null) {
+            randomSafeMove();
+            return;
+        }
+
         setMovingToGarden();
         moveToGarden();
     }
@@ -156,13 +160,29 @@ public class Gardener extends Robot {
             return;
         }
 
-        if (!bugger.goal().equals(gardenLocation)) bugger.setGoal(location, gardenLocation, 0);
+        if (!isLegitSpot(gardenLocation)) {
+            setFindingGarden();
+            findGarden();
+            return;
+        }
+
+        if (!bugger.hasGoal() || !bugger.goal().equals(gardenLocation)) bugger.setGoal(location, gardenLocation, 0);
         Direction toGarden = bugger.nextStride(location, nearbyTrees);
+//        Direction toGarden = location.directionTo(gardenLocation);
         if (toGarden != null && rc.canMove(toGarden)) rc.move(toGarden);
     }
 
-    private MapLocation findGarden() {
-        return location;
+    private MapLocation findGarden() throws GameActionException {
+        if (isLegitSpot(location)) return location;
+
+        Direction nextDir;
+        MapLocation nextLoc;
+        for (int i = 0; i < 6; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
+            nextLoc = location.add(nextDir, myType.strideRadius);
+            if (rc.canMove(nextDir, myType.strideRadius) && isLegitSpot(nextLoc)) return nextLoc;
+        }
+        return null;
     }
 
     private void waterTree() throws GameActionException {
@@ -196,6 +216,18 @@ public class Gardener extends Robot {
             }
         }
         return false;
+    }
+
+    private boolean isLegitSpot(MapLocation loc) throws GameActionException {
+        Direction nextDir;
+        MapLocation nextLoc;
+        for (int i = 0; i < 5; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
+            nextLoc = loc.add(nextDir, myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS);
+            if (!rc.canSenseAllOfCircle(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
+            if (rc.isCircleOccupiedExceptByThisRobot(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
+        }
+        return true;
     }
 
     private boolean shouldPlantTree() {
