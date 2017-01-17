@@ -16,13 +16,13 @@ public class Lumberjack extends Robot {
         super.initRobotState();
         bugger = new Bug(rc);
         targetTreeLoc = getTargetTree();
-        bugger.setGoal(rc.getLocation(), targetTreeLoc, 2);
+        bugger.setGoal(rc.getLocation(), targetTreeLoc, 4);
     }
 
     protected void doTurn() throws GameActionException {
         if (targetTreeLoc == null) {
             targetTreeLoc = getTargetTree();
-            bugger.setGoal(rc.getLocation(), targetTreeLoc, 2);
+            bugger.setGoal(rc.getLocation(), targetTreeLoc, 4);
         }
 
         if (!tryDodge()) {
@@ -82,7 +82,7 @@ public class Lumberjack extends Robot {
     }
 
     protected void lumberJackMove() throws GameActionException  {
-        if (hasTarget() && rc.getLocation().distanceSquaredTo(targetTreeLoc) < 2.0f){
+        if (hasTarget() && rc.getLocation().distanceSquaredTo(targetTreeLoc) < 4.0f){
             Direction moveDir = bugger.nextStride(rc.getLocation(), rc.senseNearbyTrees());
             if (moveDir != null) {
                 rc.move(moveDir);
@@ -91,7 +91,7 @@ public class Lumberjack extends Robot {
     }
 
     protected boolean shakeOrCutTrees() throws GameActionException {
-        if (hasTarget() && rc.getLocation().distanceSquaredTo(targetTreeLoc) < 2.0f){
+        if (hasTarget() && rc.getLocation().distanceSquaredTo(targetTreeLoc) < 4.0f){
             TreeInfo targetTree = rc.senseTreeAtLocation(targetTreeLoc);
             if (checkForGoodies(targetTree)){
                 rc.shake(targetTreeLoc);

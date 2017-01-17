@@ -26,6 +26,10 @@ public class Archon extends Robot {
     }
 
     protected void doTurn() throws GameActionException {
+        if (rc.getRoundNum() % 25 == 0){
+            postPeskyTrees();
+        }
+
         trySpawnGardener();
         if (tryDodge()) return; // think about immediate health
         moveToSafestLocation(); // think about long term health
@@ -106,17 +110,19 @@ public class Archon extends Robot {
     }
 
     private void postPeskyTrees() throws GameActionException {
-        TreeInfo[] peskyTrees = rc.senseNearbyTrees(10.0f);
-        int broadcastChannel = Coms.PESKY_TREES;
-        for (int i = 0; i < peskyTrees.length; i ++){
-            if (peskyTrees[i].getTeam() != rc.getTeam()){
-                MapLocation treeLoc = peskyTrees[i].getLocation();
-                rc.broadcast(broadcastChannel, Math.round(treeLoc.x));
-                rc.broadcast(broadcastChannel + 1, Math.round(treeLoc.y));
-                broadcastChannel += 2;
+        if (nearbyTrees != null) {
+            int broadcastChannel = Coms.PESKY_TREES;
+            for (int i = 0; i < nearbyTrees.length; i ++){
+                if (nearbyTrees[i].getTeam() != rc.getTeam()){
+                    MapLocation treeLoc = nearbyTrees[i].getLocation();
+                    rc.broadcast(broadcastChannel, Math.round(treeLoc.x));
+                    rc.broadcast(broadcastChannel + 1, Math.round(treeLoc.y));
+                    broadcastChannel += 2;
+                }
             }
+            rc.broadcast(broadcastChannel, 0);
+            rc.broadcast(broadcastChannel + 1, 0);
+
         }
-        rc.broadcast(broadcastChannel, 0);
-        rc.broadcast(broadcastChannel + 1, 0);
     }
 }
