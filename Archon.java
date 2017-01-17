@@ -26,10 +26,7 @@ public class Archon extends Robot {
     }
 
     protected void doTurn() throws GameActionException {
-        if (rc.getRoundNum() % 25 == 0){
-            postPeskyTrees();
-        }
-
+        postPeskyTrees();
         trySpawnGardener();
         if (tryDodge()) return; // think about immediate health
         moveToSafestLocation(); // think about long term health

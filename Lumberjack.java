@@ -22,6 +22,7 @@ public class Lumberjack extends Robot {
     @Override
     protected void initRoundState() throws GameActionException {
         super.initRoundState();
+
         if (targetTreeLocation == null) {
             targetTreeLocation = getTargetTree();
             bugger.setGoal(rc.getLocation(), targetTreeLocation, 4);
@@ -30,7 +31,13 @@ public class Lumberjack extends Robot {
 
     protected void doTurn() throws GameActionException {
         if (!tryDodge()) {
-            lumberJackMove();
+            boolean stayAndCut = false;
+            if (rc.canChop(targetTreeLocation)){
+                stayAndCut = true;
+            }
+            if (!stayAndCut){
+                lumberJackMove();
+            }
             if (!shakeOrCutTrees()){
                 strike();
             }
@@ -101,8 +108,8 @@ public class Lumberjack extends Robot {
     protected boolean shakeOrCutTrees() throws GameActionException {
         // if there's trees nearby
         if (nearbyTrees != null && nearbyTrees.length > 0){
-            TreeInfo nearestTree = nearbyTrees[0];
-            float minDist = nearestTree.getLocation().distanceSquaredTo(location);
+            TreeInfo nearestTree = null;
+            float minDist = 99999999.9f;
 
             for (int i = 0; i < nearbyTrees.length; i++){
                 // shake a tree
@@ -112,26 +119,32 @@ public class Lumberjack extends Robot {
                 }
 
                 // chop target
-                float distToTarget = location.distanceSquaredTo(targetTreeLocation);
-                if (distToTarget < 4.0){
-                    TreeInfo targetTree = rc.senseTreeAtLocation(targetTreeLocation);
-                    if (targetTree != null && targetTree.getHealth() < 5.0f){
-                        targetTreeLocation = null;
-                        rc.chop(targetTree.getLocation());
-                        return true;
+                if (targetTreeLocation != null){
+                    float distToTarget = location.distanceSquaredTo(targetTreeLocation);
+                    if (distToTarget < 4.0){
+                        TreeInfo targetTree = rc.senseTreeAtLocation(targetTreeLocation);
+                        if (targetTree != null){
+                            if (targetTree.getHealth() < 5.0f){
+                                targetTreeLocation = null;
+                            }
+                            rc.chop(targetTree.getLocation());
+                            return true;
+                        } else {
+                            targetTreeLocation = null;
+                        }
                     }
                 }
 
                 // determine closest tree
                 float dist = t.getLocation().distanceSquaredTo(location);
-                if (dist < minDist){
+                if (dist < minDist && t.getTeam() != rc.getTeam()){
                     nearestTree = t;
                     minDist = dist;
                 }
             }
 
             // chop random tree
-            if (rc.canChop(nearestTree.getLocation())){
+            if (nearestTree != null && rc.canChop(nearestTree.getLocation())){
                 rc.chop(nearestTree.getLocation());
                 return true;
             }
