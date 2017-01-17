@@ -6,9 +6,9 @@ import battlecode.common.*;
 abstract public class Robot {
     // DEBUG CONSTANTS
     private final int BULLETS_TO_WIN = 10000;
-    private final int ROBOT_ID = 12314;
-    private final int MIN_ROUND = 1304;
-    private final int MAX_ROUND = 1305;
+    private final int ROBOT_ID = 10983;
+    private final int MIN_ROUND = 340;
+    private final int MAX_ROUND = 356;
 
     private final int CIRCLING_GRANULARITY = 8;
     private final float CIRCLING_DEGREE_INTERVAL = 360.0F / CIRCLING_GRANULARITY;
