@@ -34,21 +34,18 @@ public class Scout extends Robot {
             // write to the first AOI channel that is stale ( > 100 rounds old)
             DecodedLocation loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_1));
             if (loc.roundNum == 0 || currentRoundNum - loc.roundNum > 100) {
-                System.out.println("broadcasting AOI on channel 1");
                 rc.broadcast(Coms.AREA_OF_INTEREST_1, Coms.encodeLocation(location, currentRoundNum));
                 return;
             }
 
             loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_2));
             if (loc.roundNum == 0 || currentRoundNum - loc.roundNum > 100) {
-                System.out.println("broadcasting AOI on channel 2");
                 rc.broadcast(Coms.AREA_OF_INTEREST_2, Coms.encodeLocation(location, currentRoundNum));
                 return;
             }
 
             loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_3));
             if (loc.roundNum == 0 || currentRoundNum - loc.roundNum > 100) {
-                System.out.println("broadcasting AOI on channel 3");
                 rc.broadcast(Coms.AREA_OF_INTEREST_3, Coms.encodeLocation(location, currentRoundNum));
             }
         }
