@@ -258,4 +258,27 @@ abstract public class Robot {
         }
         return null;
     }
+
+    protected void attackNearestEnemy() throws GameActionException {
+        if (nearbyEnemies.length > 0) {
+            // get nearest enemy
+            RobotInfo closestEnemy = nearbyEnemies[0];
+            float closestEnemyDistance = Integer.MAX_VALUE;
+            for (int i = nearbyEnemies.length -1; i >= 0; i--) {
+                float dist = location.distanceSquaredTo(nearbyEnemies[i].location);
+                if (dist < closestEnemyDistance) {
+                    closestEnemyDistance = dist;
+                    closestEnemy = nearbyEnemies[i];
+                }
+            }
+
+            if (rc.canFirePentadShot()) {
+                rc.firePentadShot(location.directionTo(closestEnemy.location));
+            } else if (rc.canFireTriadShot()) {
+                rc.fireTriadShot(location.directionTo(closestEnemy.location));
+            } else if (rc.canFireSingleShot()) {
+                rc.fireSingleShot(location.directionTo(closestEnemy.location));
+            }
+        }
+    }
 }
