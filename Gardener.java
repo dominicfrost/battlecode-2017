@@ -15,6 +15,8 @@ public class Gardener extends Robot {
     private final int MIDDLE_CLASS_THRESHOLD = 20;
     private final int UPPER_CLASS_THRESHOLD = 40;
 
+    private final float GARDEN_SPACE = (float) Math.pow((double) GameConstants.BULLET_TREE_RADIUS * 4 + RobotType.GARDENER.bodyRadius * 2, 2);
+
     private boolean isBuildReady;
 
     private MapLocation gardenLocation;
@@ -41,11 +43,10 @@ public class Gardener extends Robot {
         super.initRobotState();
         setFindingGarden();
         bugger = new Bug(rc);
-        bugger.setGoal(rc.getLocation(), home, 20);
     }
 
     @Override
-    protected void initRoundState() {
+    protected void initRoundState() throws GameActionException {
         super.initRoundState();
 
         int treeCount = rc.getTreeCount();
@@ -79,35 +80,27 @@ public class Gardener extends Robot {
     }
 
     private void spawnUnits() throws GameActionException {
-//        switch(socialClass) {
-//            case LOWER:
-//                if (numBullets < 200) return;
-//                spawnUnitsWithThresholds(30, 60, 100, 0);
-//                break;
-//            case MIDDLE:
-//                if (numBullets < 300) return;
-//                spawnUnitsWithThresholds(10, 20, 100, 0);
-//                break;
-//            case UPPER:
-//                if (numBullets < 500) return;
-//                spawnUnitsWithThresholds(10, 20, 50, 100);
-//                break;
-//        }
-        spawnUnitsWithThresholds(0, 5, 0, 0);
+        switch(socialClass) {
+            case LOWER:
+                if (numBullets < 200) return;
+                spawnUnitsWithThresholds(30, 0, 100, 0);
+                break;
+            case MIDDLE:
+                if (numBullets < 300) return;
+                spawnUnitsWithThresholds(10, 0, 100, 0);
+                break;
+            case UPPER:
+                if (numBullets < 500) return;
+                spawnUnitsWithThresholds(10, 0, 50, 100);
+                break;
+        }
     }
 
     private void spawnUnitsWithThresholds(float scoutThreshold, float lumberjackThreshold, float soldierThreshold, float tankThreshold) throws GameActionException {
-        double r = Math.random();
-//        if (r < scoutThreshold) {
-//            trySpawn(RobotType.SCOUT, spawnLocationFromGarden());
-//        } else if (r < lumberjackThreshold) {
-//            trySpawn(RobotType.LUMBERJACK, spawnLocationFromGarden());
-//        } else if (r < soldierThreshold) {
-//            trySpawn(RobotType.SOLDIER, spawnLocationFromGarden());
-//        } else if (r < tankThreshold) {
-//            trySpawn(RobotType.TANK, spawnLocationFromGarden());
-//        }
-        if (r < lumberjackThreshold) {
+        double r = Math.random() * 100;
+        if (r < scoutThreshold) {
+            trySpawn(RobotType.SCOUT, spawnLocationFromGarden());
+        } else if (r < lumberjackThreshold) {
             trySpawn(RobotType.LUMBERJACK, spawnLocationFromGarden());
         }
     }
@@ -127,6 +120,11 @@ public class Gardener extends Robot {
 
     private void findingGarden() throws GameActionException {
         gardenLocation = findGarden();
+        if (gardenLocation == null) {
+            randomSafeMove();
+            return;
+        }
+
         setMovingToGarden();
         moveToGarden();
     }
@@ -160,13 +158,29 @@ public class Gardener extends Robot {
             return;
         }
 
-        if (!bugger.goal().equals(gardenLocation)) bugger.setGoal(location, gardenLocation, 0);
+        if (!isLegitSpot(gardenLocation)) {
+            setFindingGarden();
+            findGarden();
+            return;
+        }
+
+        if (!bugger.hasGoal() || !bugger.goal().equals(gardenLocation)) bugger.setGoal(location, gardenLocation, 0);
         Direction toGarden = bugger.nextStride(location, nearbyTrees);
+//        Direction toGarden = location.directionTo(gardenLocation);
         if (toGarden != null && rc.canMove(toGarden)) rc.move(toGarden);
     }
 
-    private MapLocation findGarden() {
-        return location;
+    private MapLocation findGarden() throws GameActionException {
+        if (isLegitSpot(location)) return location;
+
+        Direction nextDir;
+        MapLocation nextLoc;
+        for (int i = 0; i < 6; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
+            nextLoc = location.add(nextDir, myType.strideRadius);
+            if (rc.canMove(nextDir, myType.strideRadius) && isLegitSpot(nextLoc)) return nextLoc;
+        }
+        return null;
     }
 
     private void waterTree() throws GameActionException {
@@ -176,8 +190,8 @@ public class Gardener extends Robot {
         MapLocation nextLoc;
         Direction nextDir;
         TreeInfo tree;
-        for (int i = 0; i < 4; i++) {
-            nextDir = Direction.getNorth().rotateRightDegrees(i * 72);
+        for (int i = 0; i < 5; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
             nextLoc = gardenLocation.add(nextDir, myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS);
             tree = rc.senseTreeAtLocation(nextLoc);
             if (tree != null && tree.team.equals(myTeam) && rc.canWater(nextLoc) && tree.health < waterLocHealth) {
@@ -192,8 +206,8 @@ public class Gardener extends Robot {
 
     private boolean plantTree() throws GameActionException {
         Direction nextDir;
-        for (int i = 0; i < 4; i++) {
-            nextDir = Direction.getNorth().rotateRightDegrees(i * 72);
+        for (int i = 0; i < 5; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
             if (rc.canPlantTree(nextDir)) {
                 rc.plantTree(nextDir);
                 return true;
@@ -202,15 +216,37 @@ public class Gardener extends Robot {
         return false;
     }
 
+    private boolean isLegitSpot(MapLocation loc) throws GameActionException {
+        Direction nextDir;
+        MapLocation nextLoc;
+        for (int i = 0; i < 5; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
+            nextLoc = loc.add(nextDir, myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS);
+            if (!rc.onTheMap(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
+            if (locInGardenerRange(nextLoc)) return false;
+            if (!rc.canSenseAllOfCircle(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
+            if (rc.isCircleOccupiedExceptByThisRobot(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
+        }
+        return true;
+    }
+
+    private boolean locInGardenerRange(MapLocation nextLoc) {
+        for (RobotInfo ri : nearbyAllies) {
+            if (ri.type == RobotType.GARDENER) {
+                if (nextLoc.distanceSquaredTo(ri.location) <= GARDEN_SPACE) return true;
+            }
+        }
+        return false;
+    }
+
     private boolean shouldPlantTree() {
         if (!isBuildReady) return false;
         if (!rc.hasTreeBuildRequirements()) return false;
-//        if (buildCount % BUILD_TO_PLANT_MODULUS > MAX_PLANT_REMAINDER) return false;
         return true;
     }
 
     private Direction spawnLocationFromGarden() {
-        return Direction.getNorth().rotateRightDegrees(4 * 72);
+        return Direction.getNorth().rotateRightDegrees(5 * 60);
     }
 }
 

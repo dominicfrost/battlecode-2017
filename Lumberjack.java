@@ -19,11 +19,6 @@ public class Lumberjack extends Robot {
         bugger.setGoal(rc.getLocation(), targetTreeLoc, 2);
     }
 
-    @Override
-    protected void initRoundState() {
-        super.initRoundState();
-    }
-
     protected void doTurn() throws GameActionException {
         if (targetTreeLoc == null) {
             targetTreeLoc = getTargetTree();
@@ -48,7 +43,7 @@ public class Lumberjack extends Robot {
 
     protected MapLocation getNearestPeskyTree() throws GameActionException {
         MapLocation closestPeskyTree = null;
-        int broadcast = PESKYTREES;
+        int broadcast = Coms.PESKY_TREES;
         float minDist = 99999999.9f;
 
         int xLoc = rc.readBroadcast(broadcast);
@@ -99,6 +94,7 @@ public class Lumberjack extends Robot {
         if (hasTarget() && rc.getLocation().distanceSquaredTo(targetTreeLoc) < 2.0f){
             TreeInfo targetTree = rc.senseTreeAtLocation(targetTreeLoc);
             if (checkForGoodies(targetTree)){
+                rc.shake(targetTreeLoc);
                 return true;
             } else if (rc.canChop(targetTree.location)){
                 if (targetTree.getHealth() < 5.0f){

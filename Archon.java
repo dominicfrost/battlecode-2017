@@ -4,9 +4,8 @@ import battlecode.common.*;
 import java.lang.Math;
 
 public class Archon extends Robot {
-    private final int ROUNDS_PER_GARDENER = 500;
+    private final int ROUNDS_PER_GARDENER = 50;
 
-    private Bug bugger;
     private int buildCount;
     private RobotInfo myGardener;
 
@@ -17,39 +16,24 @@ public class Archon extends Robot {
     @Override
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
-        bugger = new Bug(rc);
         buildCount = 1;
         postPeskyTrees();
     }
 
     @Override
-    protected void initRoundState() {
+    protected void initRoundState() throws GameActionException {
         super.initRoundState();
     }
 
     protected void doTurn() throws GameActionException {
         trySpawnGardener();
-        moveToSafestLocation();
+        if (tryDodge()) return; // think about immediate health
+        moveToSafestLocation(); // think about long term health
     }
 
     private void moveToSafestLocation() throws GameActionException {
-//        if (myGardener == null || !rc.canSenseRobot(myGardener.ID)) lookForGardener();
-//        if (myGardener == null) {
-//            randomSafeMove();
-//        } else {
-//            staySafeAroundMyGardener();
-//        }
-        randomSafeMove();
-    }
-
-    private void staySafeAroundMyGardener() {
-//        Direction toMove = safestLocationAroundMyGarden();
-    }
-
-    private Direction safestLocationAroundMyGarden(BulletInfo[] bullets, MapLocation startLocation) {
-//        Direction toGardener = location.directionTo(myGardener);
-//        for ()
-        return null;
+        if (myGardener == null || !rc.canSenseRobot(myGardener.ID)) lookForGardener();
+        if (myGardener != null) staySafeAroundMyGardener();
     }
 
     private void lookForGardener() {
@@ -85,9 +69,45 @@ public class Archon extends Robot {
         return null;
     }
 
+    private void staySafeAroundMyGardener() throws GameActionException {
+        Direction toMove = null;
+        Direction startDir = location.directionTo(myGardener.location);
+        float nextHealth;
+        float minHealth = damageAtLocation(location);
+
+        Direction next;
+        for (int i = 0; i < 4; i++) {
+            next = startDir.rotateRightDegrees(i * 30);
+            if (!locInGarden(location.add(next)) && rc.canMove(next)) {
+                nextHealth = damageAtLocation(location.add(next));
+                if (nextHealth < minHealth) {
+                    toMove = next;
+                    minHealth = nextHealth;
+                }
+            }
+
+            next = startDir.rotateLeftDegrees(i * 30);
+            if (!locInGarden(location.add(next)) && rc.canMove(next)) {
+                nextHealth = damageAtLocation(location.add(next));
+                if (nextHealth < minHealth) {
+                    toMove = next;
+                    minHealth = nextHealth;
+                }
+            }
+        }
+
+        if (toMove != null) {
+            rc.move(toMove);
+        }
+    }
+
+    private boolean locInGarden(MapLocation loc) {
+        return loc.distanceSquaredTo(myGardener.location) <= myType.bodyRadius + RobotType.GARDENER.bodyRadius + GameConstants.BULLET_TREE_RADIUS;
+    }
+
     private void postPeskyTrees() throws GameActionException {
         TreeInfo[] peskyTrees = rc.senseNearbyTrees(10.0f);
-        int broadcastChannel = PESKYTREES;
+        int broadcastChannel = Coms.PESKY_TREES;
         for (int i = 0; i < peskyTrees.length; i ++){
             if (peskyTrees[i].getTeam() != rc.getTeam()){
                 MapLocation treeLoc = peskyTrees[i].getLocation();
