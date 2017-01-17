@@ -10,10 +10,10 @@ abstract public class Robot {
     private final int MIN_ROUND = 340;
     private final int MAX_ROUND = 356;
 
-    private final int RANDOM_MOVE_GRANULARITY = 72;
     private final int CIRCLING_GRANULARITY = 8;
     private final float CIRCLING_DEGREE_INTERVAL = 360.0F / CIRCLING_GRANULARITY;
     private final int TRY_MOVE_DEGREE_OFFSET = 10;
+    private final int RANDOM_MOVE_GRANULARITY = 72;
 
     protected RobotController rc;
     protected Random rand;
@@ -79,7 +79,7 @@ abstract public class Robot {
     }
 
     protected void debugIndicator(MapLocation l) throws GameActionException {
-        if (debugCheck() && rc.onTheMap(l)) rc.setIndicatorDot(l, 0,0,0);
+        if (debugCheck() && rc.onTheMap(l)) rc.setIndicatorDot(l, 0, 0, 0);
     }
 
     protected boolean debugCheck() {
@@ -97,14 +97,14 @@ abstract public class Robot {
 
         // Now try a bunch of similar angles
         int currentCheck = 1;
-        while(currentCheck<=checksPerSide) {
+        while (currentCheck <= checksPerSide) {
             // Try the offset of the left side
-            if(rc.canMove(dir.rotateLeftDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck))) {
+            if (rc.canMove(dir.rotateLeftDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck))) {
                 rc.move(dir.rotateLeftDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck));
                 return true;
             }
             // Try the offset on the right side
-            if(rc.canMove(dir.rotateRightDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck))) {
+            if (rc.canMove(dir.rotateRightDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck))) {
                 rc.move(dir.rotateRightDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck));
                 return true;
             }
@@ -228,7 +228,7 @@ abstract public class Robot {
 
 
     protected static Direction randomDirection() {
-        return new Direction((float)Math.random() * 2 * (float)Math.PI);
+        return new Direction((float) Math.random() * 2 * (float) Math.PI);
     }
 
     private RobotInfo[] filterNearbyBots(Team team) {
@@ -289,5 +289,12 @@ abstract public class Robot {
                 rc.fireSingleShot(location.directionTo(closestEnemy.location));
             }
         }
+    }
+
+    protected boolean checkForGoodies(TreeInfo tree) throws GameActionException{
+        if (rc.canShake(tree.location) && tree.containedBullets > 0 || tree.containedRobot != null){
+            return true;
+        }
+        return false;
     }
 }

@@ -9,6 +9,8 @@ public class Coms {
     public static final int AREA_OF_INTEREST_2 = 2;
     public static final int AREA_OF_INTEREST_3 = 3;
 
+    public static final int PESKY_TREES = 500;
+
     // Bitmasks
     private static final int tenBitMask =    0b1111111111;
     private static final int twelveBitMask = 0b111111111111;
