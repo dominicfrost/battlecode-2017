@@ -98,7 +98,7 @@ public class Archon extends Robot {
         }
 
         if (toMove != null) {
-            rc.move(toMove);
+            move(toMove);
         }
     }
 

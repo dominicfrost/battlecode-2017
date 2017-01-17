@@ -9,8 +9,8 @@ public class Scout extends Robot {
     }
 
     protected void initRobotState() throws GameActionException {
-        scoutingDirection = randomDirection();
         super.initRobotState();
+        scoutingDirection = rc.getLocation().directionTo(enemyArchonLocs[rc.getID() % enemyArchonLocs.length]);
     }
 
     protected void doTurn() throws GameActionException {
@@ -72,8 +72,8 @@ public class Scout extends Robot {
         }
 
         if (closestLoc != null && gardenerLoc != null) {
-            if (!location.equals(closestLoc) && rc.canMove(closestLoc)) rc.move(closestLoc);
-            if (rc.getLocation().equals(closestLoc) && rc.canFireSingleShot()) rc.fireSingleShot(rc.getLocation().directionTo(gardenerLoc));
+            if (!location.equals(closestLoc) && rc.canMove(closestLoc)) move(closestLoc);
+            if (location.equals(closestLoc) && rc.canFireSingleShot()) rc.fireSingleShot(location.directionTo(gardenerLoc));
             return true;
         }
 

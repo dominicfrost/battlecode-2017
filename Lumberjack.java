@@ -98,7 +98,7 @@ public class Lumberjack extends Robot {
             } else {
                 Direction moveDir = bugger.nextStride(rc.getLocation(), rc.senseNearbyTrees());
                 if (moveDir != null) {
-                    rc.move(moveDir);
+                    move(moveDir);
                 }
             }
         }

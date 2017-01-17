@@ -186,7 +186,7 @@ public class Gardener extends Robot {
         if (!bugger.hasGoal() || !bugger.goal().equals(gardenLocation)) bugger.setGoal(location, gardenLocation, 0);
         Direction toGarden = bugger.nextStride(location, nearbyTrees);
 //        Direction toGarden = location.directionTo(gardenLocation);
-        if (toGarden != null && rc.canMove(toGarden)) rc.move(toGarden);
+        if (toGarden != null && rc.canMove(toGarden)) move(toGarden);
     }
 
     private MapLocation findGarden() throws GameActionException {

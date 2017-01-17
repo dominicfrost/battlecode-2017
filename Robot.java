@@ -58,6 +58,7 @@ abstract public class Robot {
         myTeam = rc.getTeam();
         enemyTeam = myTeam.opponent();
         myType = rc.getType();
+        enemyArchonLocs = rc.getInitialArchonLocations(enemyTeam);
     }
 
     protected void initRoundState() throws GameActionException {
@@ -68,7 +69,6 @@ abstract public class Robot {
         nearbyEnemies = filterNearbyBots(enemyTeam);
         nearbyTrees = rc.senseNearbyTrees();
         bulletCount = rc.getTeamBullets();
-        enemyArchonLocs = rc.getInitialArchonLocations(enemyTeam);
         nextRoundBullets = advanceBullets(nearbyBullets);
         if (bulletCount >= BULLETS_TO_WIN) {
             rc.donate(BULLETS_TO_WIN);
@@ -88,10 +88,25 @@ abstract public class Robot {
         return rc.getID() == ROBOT_ID && rc.getRoundNum() <= MAX_ROUND && rc.getRoundNum() >= MIN_ROUND;
     }
 
+    protected void move(Direction dir) throws GameActionException {
+        rc.move(dir);
+        location = rc.getLocation();
+    }
+
+    protected void move(Direction dir, float dist) throws GameActionException {
+        rc.move(dir, dist);
+        location = rc.getLocation();
+    }
+
+    protected void move(MapLocation dest) throws GameActionException {
+        rc.move(dest);
+        location = rc.getLocation();
+    }
+
     protected boolean tryMove(Direction dir) throws GameActionException {
         // First, try intended direction
         if (rc.canMove(dir)) {
-            rc.move(dir);
+            move(dir);
             return true;
         }
 
@@ -102,12 +117,12 @@ abstract public class Robot {
         while (currentCheck <= checksPerSide) {
             // Try the offset of the left side
             if (rc.canMove(dir.rotateLeftDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck))) {
-                rc.move(dir.rotateLeftDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck));
+                move(dir.rotateLeftDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck));
                 return true;
             }
             // Try the offset on the right side
             if (rc.canMove(dir.rotateRightDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck))) {
-                rc.move(dir.rotateRightDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck));
+                move(dir.rotateRightDegrees(TRY_MOVE_DEGREE_OFFSET * currentCheck));
                 return true;
             }
             // No move performed, try slightly further
@@ -137,7 +152,7 @@ abstract public class Robot {
         }
 
         if (toMove != null && rc.canMove(toMove)) {
-            rc.move(toMove);
+            move(toMove);
             return true;
         }
         return false;
