@@ -64,6 +64,7 @@ public class Gardener extends Robot {
 
     protected void doTurn() throws GameActionException {
         debug("Gardener state: " + state);
+        spawnSpecialScout();
         switch (state) {
             case FINDING_GARDEN:
                 findingGarden();
@@ -77,6 +78,20 @@ public class Gardener extends Robot {
             case MOVING_TO_GARDEN:
                 moveToGarden();
         }
+    }
+
+    private void spawnSpecialScout() throws GameActionException {
+        if (rc.getRoundNum() > 100) return;
+
+        Direction toSpawn;
+        if (gardenLocation == null ) {
+            toSpawn = randomSpawnDir(RobotType.SCOUT);
+        } else {
+            toSpawn = spawnLocationFromGarden();
+        }
+
+        if (toSpawn == null) return;
+        trySpawn(RobotType.SCOUT, toSpawn);
     }
 
     private void spawnUnits() throws GameActionException {
@@ -125,7 +140,7 @@ public class Gardener extends Robot {
     private void findingGarden() throws GameActionException {
         gardenLocation = findGarden();
         if (gardenLocation == null) {
-            randomSafeMove();
+            randomSafeMove(location.directionTo(enemyArchonLocs[rc.getID() % enemyArchonLocs.length]));
             return;
         }
 
@@ -251,6 +266,15 @@ public class Gardener extends Robot {
 
     private Direction spawnLocationFromGarden() {
         return Direction.getNorth().rotateRightDegrees(5 * 60);
+    }
+
+    private Direction randomSpawnDir(RobotType rt) {
+        Direction nextDir;
+        for (int i = 0; i < 6; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
+            if (rc.canBuildRobot(rt, nextDir)) return nextDir;
+        }
+        return null;
     }
 }
 

@@ -94,7 +94,7 @@ public class Lumberjack extends Robot {
     protected void lumberJackMove() throws GameActionException  {
         if (!rc.hasMoved()) {
             if (targetTreeLocation == null) {
-                randomSafeMove();
+                randomSafeMove(randomDirection());
             } else {
                 Direction moveDir = bugger.nextStride(rc.getLocation(), rc.senseNearbyTrees());
                 if (moveDir != null) {

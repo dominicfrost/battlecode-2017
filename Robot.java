@@ -20,6 +20,7 @@ abstract public class Robot {
     protected Team myTeam;
     protected Team enemyTeam;
     protected RobotType myType;
+    protected MapLocation[] enemyArchonLocs;
 
     protected MapLocation location;
     protected BulletInfo[] nearbyBullets;
@@ -67,6 +68,7 @@ abstract public class Robot {
         nearbyEnemies = filterNearbyBots(enemyTeam);
         nearbyTrees = rc.senseNearbyTrees();
         bulletCount = rc.getTeamBullets();
+        enemyArchonLocs = rc.getInitialArchonLocations(enemyTeam);
         nextRoundBullets = advanceBullets(nearbyBullets);
         if (bulletCount >= BULLETS_TO_WIN) {
             rc.donate(BULLETS_TO_WIN);
@@ -117,13 +119,12 @@ abstract public class Robot {
     }
 
 
-    protected boolean randomSafeMove() throws GameActionException {
+    protected boolean randomSafeMove(Direction startDir) throws GameActionException {
         Direction toMove = null;
         Direction next;
         float nextHealth;
         float minHealth = Float.MAX_VALUE;
 
-        Direction startDir = randomDirection();
         for (int i = 0; i < 360; i += RANDOM_MOVE_GRANULARITY) {
             next = startDir.rotateRightDegrees(i);
             if (rc.canMove(next)) {
@@ -178,7 +179,7 @@ abstract public class Robot {
     }
 
     protected boolean tryDodge() throws GameActionException {
-        return willAnyBulletsCollideWithMe() && randomSafeMove();
+        return willAnyBulletsCollideWithMe() && randomSafeMove(randomDirection());
     }
 
     protected boolean willAnyBulletsCollideWithMe() {
@@ -289,6 +290,11 @@ abstract public class Robot {
                 rc.fireSingleShot(location.directionTo(closestEnemy.location));
             }
         }
+    }
+
+    protected boolean doCirclesOverlap(MapLocation locA, MapLocation locB, float radiusA, float radiusB) {
+        double distance = Math.sqrt(locA.distanceSquaredTo(locB));
+        return radiusA + radiusB >= distance;
     }
 
     protected boolean checkForGoodies(TreeInfo tree) throws GameActionException{
