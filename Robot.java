@@ -308,7 +308,7 @@ abstract public class Robot {
 
     protected boolean attackIfWayClose() throws GameActionException {
         for (RobotInfo b : nearbyEnemies) {
-            if (location.distanceSquaredTo(b.location) <= b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE) {
+            if (location.distanceSquaredTo(b.location) <= Math.pow(b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE, 2)) {
                 spray(location.directionTo(b.location));
                 return true;
             }
