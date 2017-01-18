@@ -15,15 +15,17 @@ public class Scout extends Robot {
 
     protected void doTurn() throws GameActionException {
         determineAreasOfInterest();
+        if (sitOnGardenerTree()) return;
+
         if (!tryDodge()) {
 
             if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
                 scoutingDirection = randomDirection();
             }
 
-            if (sitOnGardenerTree()) return;
 
-            if (attackIfWayClose()) return;
+            if (attackAndFleeIfWayClose())return;
+
             tryMove(scoutingDirection);
         }
         if (attackIfWayClose()) return;

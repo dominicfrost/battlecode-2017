@@ -23,7 +23,7 @@ public class Tank extends Robot {
                 moveDir = randomDirection();
             }
 
-            if (attackIfWayClose()) return;
+            if (attackAndFleeIfWayClose()) return;
             tryMove(moveDir);
         }
         if (attackIfWayClose()) return;

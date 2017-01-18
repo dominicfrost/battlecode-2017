@@ -30,7 +30,7 @@ public class Soldier extends Robot {
                 moveDir = location.directionTo(destination);
             }
 
-            if (attackIfWayClose()) return;
+            if (attackAndFleeIfWayClose()) return;
             tryMove(moveDir);
         }
         if (attackIfWayClose()) return;

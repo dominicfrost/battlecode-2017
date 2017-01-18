@@ -5,7 +5,7 @@ import battlecode.common.*;
 
 abstract public class Robot {
     // DEBUG CONSTANTS
-    private final float WAY_CLOSE_DISTANCE = 1F;
+    protected final float WAY_CLOSE_DISTANCE = 1F;
     private final int BULLETS_TO_WIN = 10000;
     private final int ROBOT_ID = 10140;
     private final int MIN_ROUND = 0;
@@ -174,9 +174,9 @@ abstract public class Robot {
             }
         }
 
+        // assume they will shoot us
         for (RobotInfo e : nearbyEnemies) {
-            if (e.type.equals(RobotType.LUMBERJACK) &&
-                location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + RobotType.LUMBERJACK.bodyRadius, 2) + .01F) {
+            if (location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + e.type.bodyRadius, 2) + .01F) {
                 damage += e.type.attackPower;
             }
         }
@@ -204,15 +204,14 @@ abstract public class Robot {
 
     protected boolean tryDodge() throws GameActionException {
         if (!myType.equals(RobotType.LUMBERJACK)) {
-            if (canLumberjacksHitMe()) return randomSafeMove(randomDirection());
+            if (anyoneTooClose()) return randomSafeMove(randomDirection());
         }
         return willAnyBulletsCollideWithMe() && randomSafeMove(randomDirection());
     }
 
-    private boolean canLumberjacksHitMe() {
+    private boolean anyoneTooClose() {
         for (RobotInfo e : nearbyEnemies) {
-            if (e.type.equals(RobotType.LUMBERJACK) &&
-                    location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + RobotType.LUMBERJACK.bodyRadius, 2) + .01F) {
+            if (location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + e.type.bodyRadius, 2) + .01F) {
                 return true;
             }
         }
@@ -310,6 +309,17 @@ abstract public class Robot {
         for (RobotInfo b : nearbyEnemies) {
             if (location.distanceSquaredTo(b.location) <= Math.pow(b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE, 2)) {
                 spray(location.directionTo(b.location));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean attackAndFleeIfWayClose() throws GameActionException {
+        for (RobotInfo b : nearbyEnemies) {
+            if (location.distanceSquaredTo(b.location) <= Math.pow(b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE, 2)) {
+                spray(location.directionTo(b.location));
+                tryMove(location.directionTo(b.location).opposite());
                 return true;
             }
         }
