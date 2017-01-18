@@ -5,7 +5,7 @@ import battlecode.common.*;
 
 abstract public class Robot {
     // DEBUG CONSTANTS
-    private final float WAY_CLOSE_DISTANCE = .01F;
+    private final float WAY_CLOSE_DISTANCE = 1F;
     private final int BULLETS_TO_WIN = 10000;
     private final int ROBOT_ID = 10140;
     private final int MIN_ROUND = 0;
@@ -308,7 +308,7 @@ abstract public class Robot {
 
     protected boolean attackIfWayClose() throws GameActionException {
         for (RobotInfo b : nearbyEnemies) {
-            if (location.distanceSquaredTo(b.location) >= b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE) {
+            if (location.distanceSquaredTo(b.location) <= b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE) {
                 spray(location.directionTo(b.location));
                 return true;
             }
