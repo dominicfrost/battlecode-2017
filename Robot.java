@@ -174,6 +174,13 @@ abstract public class Robot {
             }
         }
 
+        for (RobotInfo e : nearbyEnemies) {
+            if (e.type.equals(RobotType.LUMBERJACK) &&
+                location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + RobotType.LUMBERJACK.bodyRadius, 2) + .01F) {
+                damage += e.type.attackPower;
+            }
+        }
+
         return damage;
     }
 
@@ -196,7 +203,20 @@ abstract public class Robot {
     }
 
     protected boolean tryDodge() throws GameActionException {
+        if (!myType.equals(RobotType.LUMBERJACK)) {
+            if (canLumberjacksHitMe()) return randomSafeMove(randomDirection());
+        }
         return willAnyBulletsCollideWithMe() && randomSafeMove(randomDirection());
+    }
+
+    private boolean canLumberjacksHitMe() {
+        for (RobotInfo e : nearbyEnemies) {
+            if (e.type.equals(RobotType.LUMBERJACK) &&
+                    location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + RobotType.LUMBERJACK.bodyRadius, 2) + .01F) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected boolean willAnyBulletsCollideWithMe() {
