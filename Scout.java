@@ -15,17 +15,19 @@ public class Scout extends Robot {
 
     protected void doTurn() throws GameActionException {
         determineAreasOfInterest();
-        if (tryDodge()) return;
+        if (!tryDodge()) {
 
-        if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
-            scoutingDirection = randomDirection();
+            if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
+                scoutingDirection = randomDirection();
+            }
+
+            if (sitOnGardenerTree()) return;
+
+            if (attackIfWayClose()) return;
+            tryMove(scoutingDirection);
         }
-
-        if (sitOnGardenerTree()) return;
-
-        tryMove(scoutingDirection);
-
-        attackNearestEnemy();
+        if (attackIfWayClose()) return;
+        pieCountAttack();
     }
 
     private void determineAreasOfInterest() throws GameActionException {
@@ -87,7 +89,7 @@ public class Scout extends Robot {
         if (location.distanceSquaredTo(center) <= distanceToCenterSquared + .001) return location;
 
         MapLocation nextLoc;
-        Direction nextDir = randomDirection();
+        Direction nextDir = Direction.getNorth();
         float dist;
         MapLocation closestLoc = null;
         float closestDist = Float.MAX_VALUE;

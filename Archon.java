@@ -56,13 +56,15 @@ public class Archon extends Robot {
     }
 
     private boolean shouldHireGardener() {
-        return (rc.getRoundNum() + ROUNDS_PER_GARDENER) / buildCount >= ROUNDS_PER_GARDENER && rc.hasRobotBuildRequirements(RobotType.GARDENER);
+        if (!rc.hasRobotBuildRequirements(RobotType.GARDENER)) return false;
+        if (rc.getRoundNum() < 200) return true;
+        return (rc.getRoundNum() + ROUNDS_PER_GARDENER) / buildCount >= ROUNDS_PER_GARDENER;
     }
 
     private Direction getHireDirection() {
         Direction dir;
-        for (int i = 0; i < 5; i++) {
-            dir = Direction.getNorth().rotateRightDegrees(i * 72);
+        for (int i = 0; i < 6; i++) {
+            dir = Direction.getNorth().rotateRightDegrees(i * 60);
             if (rc.canHireGardener(dir)) {
                 return dir;
             }
@@ -97,7 +99,7 @@ public class Archon extends Robot {
             }
         }
 
-        if (toMove != null) {
+        if (toMove != null && rc.canMove(toMove)) {
             move(toMove);
         }
     }

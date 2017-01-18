@@ -63,7 +63,6 @@ public class Gardener extends Robot {
     }
 
     protected void doTurn() throws GameActionException {
-        debug("Gardener state: " + state);
         spawnSpecialScout();
         switch (state) {
             case FINDING_GARDEN:
@@ -81,7 +80,7 @@ public class Gardener extends Robot {
     }
 
     private void spawnSpecialScout() throws GameActionException {
-        if (rc.getRoundNum() > 100) return;
+        if (rc.getRoundNum() > 300) return;
 
         Direction toSpawn;
         if (gardenLocation == null ) {
@@ -140,10 +139,9 @@ public class Gardener extends Robot {
     private void findingGarden() throws GameActionException {
         gardenLocation = findGarden();
         if (gardenLocation == null) {
-            randomSafeMove(location.directionTo(enemyArchonLocs[rc.getID() % enemyArchonLocs.length]));
+            randomSafeMove(randomDirection());
             return;
         }
-
         setMovingToGarden();
         moveToGarden();
     }
@@ -171,6 +169,13 @@ public class Gardener extends Robot {
     }
 
     private void moveToGarden() throws GameActionException {
+        if (isLegitSpot(location)) {
+            gardenLocation = location;
+            setAtGarden();
+            atGarden();
+            return;
+        }
+
         if (gardenLocation.equals(location)) {
             setAtGarden();
             atGarden();
@@ -179,7 +184,7 @@ public class Gardener extends Robot {
 
         if (!isLegitSpot(gardenLocation)) {
             setFindingGarden();
-            findGarden();
+            findingGarden();
             return;
         }
 
@@ -192,14 +197,22 @@ public class Gardener extends Robot {
     private MapLocation findGarden() throws GameActionException {
         if (isLegitSpot(location)) return location;
 
+        // search until we are out of bytecode or we find a legit spot
+        int iterations = 0;
+        int granularity;
         Direction nextDir;
         MapLocation nextLoc;
-        for (int i = 0; i < 6; i++) {
-            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
-            nextLoc = location.add(nextDir, myType.strideRadius);
-            if (rc.canMove(nextDir, myType.strideRadius) && isLegitSpot(nextLoc)) return nextLoc;
+        Direction startDir = location.directionTo(enemyArchonLocs[rc.getID() % enemyArchonLocs.length]);
+        while (true) {
+            iterations++;
+            granularity = 12 * iterations;
+            for (int i = 0; i < granularity; i++) {
+                if (Clock.getBytecodesLeft() < 2000) return null;
+                nextDir = startDir.rotateRightDegrees(i * 30 / iterations);
+                nextLoc = location.add(nextDir, myType.strideRadius * iterations);
+                if (rc.canMove(nextDir, myType.strideRadius) && isLegitSpot(nextLoc)) return nextLoc;
+            }
         }
-        return null;
     }
 
     private void waterTree() throws GameActionException {
@@ -241,6 +254,7 @@ public class Gardener extends Robot {
         for (int i = 0; i < 5; i++) {
             nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
             nextLoc = loc.add(nextDir, myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS);
+            if (!rc.canSenseAllOfCircle(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
             if (!rc.onTheMap(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
             if (locInGardenerRange(nextLoc)) return false;
             if (!rc.canSenseAllOfCircle(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;

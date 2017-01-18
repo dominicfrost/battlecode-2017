@@ -11,28 +11,30 @@ public class Soldier extends Robot {
 
 
     protected void doTurn() throws GameActionException {
-        if (tryDodge()) return;
+        if (!tryDodge()) {
 
-        if (destination == null) {
-            destination = acquireDestination();
-            destinationBugger = new Bug(rc);
-            destinationBugger.setGoal(location, destination, 5);
+            if (destination == null) {
+                destination = acquireDestination();
+                destinationBugger = new Bug(rc);
+                destinationBugger.setGoal(location, destination, 5);
+            }
+
+            Direction moveDir;
+            if (destination != null) {
+                moveDir = destinationBugger.nextStride(location, nearbyTrees);
+            } else {
+                moveDir = randomDirection();
+            }
+
+            if (moveDir == null) {
+                moveDir = location.directionTo(destination);
+            }
+
+            if (attackIfWayClose()) return;
+            tryMove(moveDir);
         }
-
-        Direction moveDir;
-        if (destination != null) {
-            moveDir = destinationBugger.nextStride(location, nearbyTrees);
-        } else {
-            moveDir = randomDirection();
-        }
-
-        if (moveDir == null) {
-            moveDir = location.directionTo(destination);
-        }
-
-        tryMove(moveDir);
-
-        attackNearestEnemy();
+        if (attackIfWayClose()) return;
+        pieCountAttack();
     }
 
     private MapLocation acquireDestination() throws GameActionException {

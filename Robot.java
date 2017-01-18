@@ -5,10 +5,12 @@ import battlecode.common.*;
 
 abstract public class Robot {
     // DEBUG CONSTANTS
+    private final float WAY_CLOSE_DISTANCE = .01F;
     private final int BULLETS_TO_WIN = 10000;
-    private final int ROBOT_ID = 10983;
-    private final int MIN_ROUND = 340;
-    private final int MAX_ROUND = 356;
+    private final int ROBOT_ID = 10140;
+    private final int MIN_ROUND = 0;
+    private final int MAX_ROUND = 30;
+    private final int ATTACK_CONSIDERATION_DISTANCE = 3;
 
     private final int CIRCLING_GRANULARITY = 8;
     private final float CIRCLING_DEGREE_INTERVAL = 360.0F / CIRCLING_GRANULARITY;
@@ -284,6 +286,124 @@ abstract public class Robot {
         return null;
     }
 
+    protected boolean attackIfWayClose() throws GameActionException {
+        for (RobotInfo b : nearbyEnemies) {
+            if (location.distanceSquaredTo(b.location) >= b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE) {
+                spray(location.directionTo(b.location));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean pieCountAttack() throws GameActionException {
+        int numPieces = 12;
+        int pieceDegrees = 360 / numPieces;
+
+        int[] counts = new int[numPieces];
+
+        Direction next;
+        float degrees;
+        int countIndex;
+        for (RobotInfo ri : nearbyEnemies) {
+            next = location.directionTo(ri.location);
+            degrees = (next.getAngleDegrees() + 360) % 360;
+            countIndex = (int) degrees / pieceDegrees;
+            counts[countIndex]++;
+        }
+        for (RobotInfo ri : nearbyAllies) {
+            next = location.directionTo(ri.location);
+            degrees = (next.getAngleDegrees() + 360) % 360;
+            countIndex = (int) degrees / pieceDegrees;
+            counts[countIndex]--;
+        }
+//        for (TreeInfo ri : nearbyTrees) {
+//            if (!ri.team.equals(enemyTeam)) continue;
+//            next = location.directionTo(ri.location);
+//            degrees = (next.getAngleDegrees() + 360) % 360;
+//            countIndex = (int) degrees / pieceDegrees;
+//            counts[countIndex]++;
+//        }
+
+        int maxCount = 0;
+        int index = -1;
+        for (int i = numPieces - 1; i >= 0; i--) {
+            if (counts[i] > maxCount) {
+                index = i;
+                maxCount = counts[i];
+            }
+        }
+
+        if (index == -1) return false;
+        int toShootDeg = ( pieceDegrees * (index + 1) ) - (pieceDegrees / 2);
+        Direction toShoot = new Direction((float) Math.toRadians(toShootDeg));
+        spray(toShoot);
+        return true;
+    }
+
+    protected void accurateAttack() throws GameActionException {
+        if (nearbyEnemies.length > 0) {
+            System.out.println("STart " + Clock.getBytecodesLeft());
+            // get nearest enemy
+            RobotInfo closestEnemy = nearbyEnemies[0];
+            float closestEnemyDistance = Integer.MAX_VALUE;
+            for (int i = nearbyEnemies.length -1; i >= 0; i--) {
+                float dist = location.distanceSquaredTo(nearbyEnemies[i].location);
+                if (dist < closestEnemyDistance) {
+                    closestEnemyDistance = dist;
+                    closestEnemy = nearbyEnemies[i];
+                }
+            }
+
+
+            int singleDmg = 0;
+            int triadDmg = 0;
+            int pentadDmg = 0;
+            Direction dir = location.directionTo(closestEnemy.location);
+            float maxDist = ATTACK_CONSIDERATION_DISTANCE * myType.bulletSpeed;
+            float maxDistSqr = maxDist * maxDist;
+            for (int i = nearbyEnemies.length -1; i >= 0; i--) {
+                if (Clock.getBytecodesLeft() < 2000) break;
+                if (nearbyEnemies[i].location.equals(closestEnemy.location)) continue;
+                if (location.distanceSquaredTo(nearbyEnemies[i].location) < maxDistSqr) continue;
+                if (singleWillHit(dir, nearbyEnemies[i])) {
+                    singleDmg++;
+                    continue;
+                }
+                if (triadWillHit(dir, nearbyEnemies[i])){
+                    triadDmg++;
+                    continue;
+                }
+
+                if (pentadWillHit(dir, nearbyEnemies[i])) pentadDmg++;
+            }
+
+            for (int i = nearbyAllies.length -1; i >= 0; i--) {
+                if (Clock.getBytecodesLeft() < 2000) break; // We may shoot our guys at the price of goin over
+                if (location.distanceSquaredTo(nearbyAllies[i].location) > maxDistSqr) continue;
+                if (singleWillHit(dir, nearbyAllies[i])) {
+                    singleDmg--;
+                    continue;
+                }
+                if (triadWillHit(dir, nearbyAllies[i])){
+                    triadDmg--;
+                    continue;
+                }
+
+                if (pentadWillHit(dir, nearbyAllies[i])) pentadDmg--;
+            }
+
+            System.out.println("End " + Clock.getBytecodesLeft());
+            if (pentadDmg > singleDmg && pentadDmg > triadDmg && pentadDmg > 0 && rc.canFirePentadShot()) {
+                rc.firePentadShot(dir);
+            } else if (triadDmg > singleDmg && triadDmg > 0 && rc.canFireTriadShot()) {
+                rc.fireTriadShot(dir);
+            } else if (singleDmg > 0 && rc.canFireSingleShot()) {
+                rc.fireSingleShot(dir);
+            }
+        }
+    }
+
     protected void attackNearestEnemy() throws GameActionException {
         if (nearbyEnemies.length > 0) {
             // get nearest enemy
@@ -307,9 +427,93 @@ abstract public class Robot {
         }
     }
 
+    private void spray(Direction dir) throws GameActionException {
+        if (rc.canFirePentadShot()) {
+            rc.firePentadShot(dir);
+        } else if (rc.canFireTriadShot()) {
+            rc.fireTriadShot(dir);
+        } else if (rc.canFireSingleShot()) {
+            rc.fireSingleShot(dir);
+        }
+    }
+
+    private boolean singleWillHit(Direction shotDir, RobotInfo bot) {
+        MapLocation nextCenter;
+        for (int i = ATTACK_CONSIDERATION_DISTANCE; i > 0; i--) {
+            nextCenter = location.add(shotDir, i * myType.bulletSpeed);
+            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
+        }
+        return false;
+    }
+
+    private boolean triadWillHit(Direction shotDir, RobotInfo bot) {
+        MapLocation nextCenter;
+        Direction nextDir;
+        for (int i = ATTACK_CONSIDERATION_DISTANCE; i > 0; i--) {
+            nextDir = shotDir.rotateRightDegrees(20);
+            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
+            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
+
+            nextDir = shotDir.rotateLeftDegrees(20);
+            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
+            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
+        }
+        return false;
+    }
+
+    private boolean pentadWillHit(Direction shotDir, RobotInfo bot) {
+        MapLocation nextCenter;
+        Direction nextDir;
+        for (int i = ATTACK_CONSIDERATION_DISTANCE; i > 0; i--) {
+            nextDir = shotDir.rotateRightDegrees(15);
+            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
+            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
+
+            nextDir = shotDir.rotateLeftDegrees(15);
+            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
+            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
+
+            nextDir = shotDir.rotateRightDegrees(30);
+            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
+            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
+
+            nextDir = shotDir.rotateLeftDegrees(30);
+            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
+            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
+        }
+        return false;
+    }
+
+    private boolean willHit(Direction shotDir, RobotInfo bot, int numBullets, int separationDeg) {
+        int loopLimit = (numBullets - 1) / 2;
+        Direction nextDir;
+        MapLocation nextCenter;
+        for (int i = ATTACK_CONSIDERATION_DISTANCE; i > 0; i--) {
+            for (int j = loopLimit; j >= 0; j--) {
+                if (j == 0 ) {
+                    nextCenter = location.add(shotDir, i * myType.bulletSpeed);
+                    if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
+                } else {
+                    nextDir = shotDir.rotateRightDegrees(separationDeg * j);
+                    nextCenter = location.add(nextDir, i * myType.bulletSpeed);
+                    if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
+
+                    nextDir = shotDir.rotateLeftDegrees(separationDeg * j);
+                    nextCenter = location.add(nextDir, i * myType.bulletSpeed);
+                    if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
     protected boolean doCirclesOverlap(MapLocation locA, MapLocation locB, float radiusA, float radiusB) {
         double distance = Math.sqrt(locA.distanceSquaredTo(locB));
         return radiusA + radiusB >= distance;
+    }
+
+    protected boolean pointInCircle(MapLocation point, MapLocation center, float radius) {
+        return radius > Math.sqrt(center.distanceSquaredTo(point));
     }
 
     protected boolean checkForGoodies(TreeInfo tree) throws GameActionException{
