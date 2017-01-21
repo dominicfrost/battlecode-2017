@@ -1,8 +1,22 @@
 package battlecode2017;
 import battlecode.common.*;
 
+import java.util.Arrays;
+import java.util.HashMap;
+
 public class Scout extends Robot {
-    Direction scoutingDirection;
+    private TreeInfo[] neutralTrees;
+    private boolean hasShakenTree;
+    private RobotInfo harassee;
+    private HashMap<Integer, Boolean> shakenTrees;
+    private ScoutState state;
+    private Direction scoutingDirection;
+
+    private enum ScoutState {
+        SHAKING_TREES,
+        HARASSING,
+        SCOUTING,
+    }
 
     Scout(RobotController _rc) {
         super(_rc);
@@ -10,26 +24,161 @@ public class Scout extends Robot {
 
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
+        setScouting();
+        shakenTrees = new HashMap<>();
         scoutingDirection = rc.getLocation().directionTo(enemyArchonLocs[rc.getID() % enemyArchonLocs.length]);
+    }
+
+    protected void initRoundState() throws GameActionException {
+        super.initRoundState();
+        setNeutralTrees();
+        sortEnemies();
+        hasShakenTree = false;
+    }
+
+    private void setNeutralTrees() {
+        neutralTrees = Arrays.stream(nearbyTrees).filter(t -> t.team.equals(Team.NEUTRAL) && t.containedBullets > 0 && shakenTrees.get(t.getID()) == null).toArray(TreeInfo[]::new);
+        TreeComparator comp = new TreeComparator(location);
+        Arrays.sort(neutralTrees, comp);
+    }
+
+    private void sortEnemies() {
+        BotComparator comp = new BotComparator(location);
+        Arrays.sort(nearbyEnemies, comp);
     }
 
     protected void doTurn() throws GameActionException {
         determineAreasOfInterest();
-        if (sitOnGardenerTree()) return;
-
-        if (!tryDodge()) {
-
-            if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
-                scoutingDirection = randomDirection();
-            }
-
-
-            if (attackAndFleeIfWayClose())return;
-
-            tryMove(scoutingDirection);
+        attackIfWayClose();
+        tryShakeTrees();
+        tryDodge();
+        switch (state) {
+            case SCOUTING:
+                scout();
+                break;
+            case HARASSING:
+                harass();
+                break;
+            case SHAKING_TREES:
+                moveToShakableTree();
+                break;
         }
-        if (attackIfWayClose()) return;
-        pieCountAttack();
+        tryShakeTrees();
+        attackIfWayClose();
+    }
+
+    private void setScouting() {
+        state = ScoutState.SCOUTING;
+        harassee = null;
+    }
+
+    private void scout() throws GameActionException {
+        if (hasMoved) return;
+
+        RobotInfo newHarasee = findHarasee();
+        if (newHarasee != null) {
+            setHarasing(newHarasee);
+            harass();
+            return;
+
+        }
+
+        if (neutralTrees.length > 0) {
+            setShaking();
+            moveToShakableTree();
+            return;
+
+        }
+
+        if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
+            scoutingDirection = randomDirection();
+        }
+        tryMove(scoutingDirection);
+    }
+
+    private void setHarasing(RobotInfo newHarassee) throws GameActionException {
+        state = ScoutState.HARASSING;
+        harassee = newHarassee;
+        rc.setIndicatorLine(location, harassee.location, 255, 0,0);
+    }
+
+    private void harass() throws GameActionException {
+        RobotInfo newHarasee = findHarasee();
+        if (newHarasee != null) {
+            setHarasing(newHarasee);
+        } else {
+            setScouting();
+            scout();
+            return;
+        }
+
+        MapLocation dest = findSpotAroundHarassee();
+        if (dest == null) {
+            tryMove(location.directionTo(harassee.location));
+            return;
+        }
+
+        if (canAttackHarasee()) {
+            spray(location.directionTo(harassee.location));
+            return;
+        }
+
+        tryMove(location.directionTo(dest));
+    }
+
+    private void setShaking() throws GameActionException {
+        state = ScoutState.SHAKING_TREES;
+        harassee = null;
+    }
+
+    private void moveToShakableTree() throws GameActionException {
+        RobotInfo newHarasee = findHarasee();
+        if (newHarasee != null) {
+            setHarasing(newHarasee);
+            harass();
+            return;
+
+        }
+
+        if (neutralTrees.length == 0) {
+            setScouting();
+            scout();
+            return;
+        }
+
+        rc.setIndicatorLine(location, neutralTrees[0].location, 0, 255,0);
+        tryMove(location.directionTo(neutralTrees[0].location));
+    }
+
+    private RobotInfo findHarasee() {
+        for (RobotInfo ri : nearbyEnemies) {
+            if (ri.type.equals(RobotType.GARDENER) || ri.type.equals(RobotType.ARCHON)) {
+                return ri;
+            }
+        }
+        return null;
+    }
+
+    private void tryShakeTrees() throws GameActionException {
+        if (hasShakenTree) return;
+        for (TreeInfo ti: neutralTrees) {
+            if (!closeEnoughToShake(ti)) return;
+            if (tryShakeTree(ti)) return;
+        }
+    }
+
+    private boolean closeEnoughToShake(TreeInfo ti) {
+        return location.distanceSquaredTo(ti.location) < ti.radius + myType.bodyRadius + 1F;
+    }
+
+    private boolean tryShakeTree(TreeInfo ti) throws GameActionException {
+        if (rc.canShake(ti.getID())) {
+            rc.shake(ti.getID());
+            shakenTrees.put(ti.getID(), true);
+            hasShakenTree = true;
+            return true;
+        }
+        return false;
     }
 
     private void determineAreasOfInterest() throws GameActionException {
@@ -55,40 +204,13 @@ public class Scout extends Robot {
         }
     }
 
-    private boolean sitOnGardenerTree() throws GameActionException {
-        MapLocation attackLoc;
-        float dist;
-        MapLocation closestLoc = null, gardenerLoc = null;
-        float closestDist = Float.MAX_VALUE;
-
-        for (RobotInfo ri : nearbyEnemies) {
-            if (ri.type.equals(RobotType.GARDENER)) {
-                attackLoc = findTreeNextToGardener(ri.location, RobotType.GARDENER.bodyRadius, myType.bodyRadius);
-                if (attackLoc != null) {
-                    dist = location.distanceSquaredTo(attackLoc);
-                    if (dist < closestDist) {
-                        closestLoc = attackLoc;
-                        closestDist = dist;
-                        gardenerLoc = ri.location;
-                    }
-                }
-            }
-        }
-
-        if (closestLoc != null && gardenerLoc != null) {
-            if (!location.equals(closestLoc) && rc.canMove(closestLoc)) move(closestLoc);
-            if (location.equals(closestLoc) && rc.canFireSingleShot()) rc.fireSingleShot(location.directionTo(gardenerLoc));
-            return true;
-        }
-
-        return false;
+    private boolean canAttackHarasee() {
+        float distanceToCenterSquared = (float) Math.pow(harassee.type.bodyRadius + myType.bodyRadius, 2);
+        return location.distanceSquaredTo(harassee.location) <= distanceToCenterSquared;
     }
 
-    private MapLocation findTreeNextToGardener(MapLocation center, float centerRadius, float revolverRadius) throws GameActionException {
-        float distanceToCenter = centerRadius + revolverRadius;
-        float distanceToCenterSquared = (float) Math.pow(distanceToCenter, 2);
-
-        if (location.distanceSquaredTo(center) <= distanceToCenterSquared + .001) return location;
+    private MapLocation findSpotAroundHarassee() throws GameActionException {
+        float distanceToCenter = harassee.type.bodyRadius + myType.bodyRadius;
 
         MapLocation nextLoc;
         Direction nextDir = Direction.getNorth();
@@ -98,8 +220,8 @@ public class Scout extends Robot {
 
         for (int i = 0; i < 6; i++) {
             nextDir = nextDir.rotateLeftDegrees(60 * i);
-            nextLoc = center.add(nextDir, distanceToCenter);
-            if (rc.canSenseAllOfCircle(nextLoc, revolverRadius) && rc.onTheMap(nextLoc) && rc.isLocationOccupiedByTree(nextLoc)) {
+            nextLoc = harassee.location.add(nextDir, distanceToCenter);
+            if (rc.canSenseAllOfCircle(nextLoc, myType.bodyRadius) && rc.onTheMap(nextLoc) && rc.isLocationOccupiedByTree(nextLoc)) {
                 nextLoc = rc.senseTreeAtLocation(nextLoc).location;
                 dist = location.distanceSquaredTo(nextLoc);
                 if (dist < closestDist) {

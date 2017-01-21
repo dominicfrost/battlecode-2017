@@ -127,6 +127,7 @@ public class Lumberjack extends Robot {
                                 targetTreeLocation = null;
                             }
                             rc.chop(targetTree.getLocation());
+                            hasAttacked = true;
                             return true;
                         } else {
                             targetTreeLocation = null;
@@ -145,6 +146,7 @@ public class Lumberjack extends Robot {
             // chop random tree
             if (nearestTree != null && rc.canChop(nearestTree.getLocation())){
                 rc.chop(nearestTree.getLocation());
+                hasAttacked = true;
                 return true;
             }
         }
@@ -154,6 +156,7 @@ public class Lumberjack extends Robot {
     protected void strike() throws GameActionException{
         if (nearbyEnemies.length > nearbyAllies.length){
             rc.strike();
+            hasAttacked = true;
         }
     }
 }

@@ -24,6 +24,9 @@ abstract public class Robot {
     protected RobotType myType;
     protected MapLocation[] enemyArchonLocs;
 
+    protected boolean hasMoved;
+    protected boolean hasAttacked;
+
     protected MapLocation location;
     protected BulletInfo[] nearbyBullets;
     protected BulletInfo[] nextRoundBullets;
@@ -64,6 +67,8 @@ abstract public class Robot {
     }
 
     protected void initRoundState() throws GameActionException {
+        hasMoved = false;
+        hasAttacked = false;
         location = rc.getLocation();
         nearbyBullets = rc.senseNearbyBullets();
         nearbyBots = rc.senseNearbyRobots();
@@ -93,16 +98,19 @@ abstract public class Robot {
     protected void move(Direction dir) throws GameActionException {
         rc.move(dir);
         location = rc.getLocation();
+        hasMoved = true;
     }
 
     protected void move(Direction dir, float dist) throws GameActionException {
         rc.move(dir, dist);
         location = rc.getLocation();
+        hasMoved = true;
     }
 
     protected void move(MapLocation dest) throws GameActionException {
         rc.move(dest);
         location = rc.getLocation();
+        hasMoved = true;
     }
 
     protected boolean tryMove(Direction dir) throws GameActionException {
@@ -203,14 +211,13 @@ abstract public class Robot {
     }
 
     protected boolean tryDodge() throws GameActionException {
-        if (!myType.equals(RobotType.LUMBERJACK)) {
-            if (anyoneTooClose()) return randomSafeMove(randomDirection());
-        }
-        return willAnyBulletsCollideWithMe() && randomSafeMove(randomDirection());
+        return anyoneTooClose() && willAnyBulletsCollideWithMe() && randomSafeMove(randomDirection());
     }
 
     private boolean anyoneTooClose() {
+        if (myType.equals(RobotType.LUMBERJACK)) return false;
         for (RobotInfo e : nearbyEnemies) {
+            if (e.type == RobotType.ARCHON || e.type == RobotType.GARDENER) continue;
             if (location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + e.type.bodyRadius, 2) + .01F) {
                 return true;
             }
@@ -219,10 +226,7 @@ abstract public class Robot {
     }
 
     protected boolean willAnyBulletsCollideWithMe() {
-        for (BulletInfo b : nearbyBullets) {
-            if (willCollideWithMe(b)) return true;
-        }
-        return false;
+        return willAnyBulletsCollideWithLocation(location);
     }
 
     protected boolean willAnyBulletsCollideWithLocation(MapLocation loc) {
@@ -233,10 +237,6 @@ abstract public class Robot {
             if (willCollideLocation(b, loc)) return true;
         }
         return false;
-    }
-
-    protected boolean willCollideWithMe(BulletInfo bullet) {
-        return willCollideLocation(bullet, location.add(bullet.dir, bullet.speed));
     }
 
     protected boolean willCollideLocation(BulletInfo bullet, MapLocation loc) {
@@ -306,6 +306,7 @@ abstract public class Robot {
     }
 
     protected boolean attackIfWayClose() throws GameActionException {
+        if (hasAttacked) return false;
         for (RobotInfo b : nearbyEnemies) {
             if (location.distanceSquaredTo(b.location) <= Math.pow(b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE, 2)) {
                 spray(location.directionTo(b.location));
@@ -457,13 +458,16 @@ abstract public class Robot {
         }
     }
 
-    private void spray(Direction dir) throws GameActionException {
+    protected void spray(Direction dir) throws GameActionException {
         if (rc.canFirePentadShot()) {
             rc.firePentadShot(dir);
+            hasAttacked = true;
         } else if (rc.canFireTriadShot()) {
             rc.fireTriadShot(dir);
+            hasAttacked = true;
         } else if (rc.canFireSingleShot()) {
             rc.fireSingleShot(dir);
+            hasAttacked = true;
         }
     }
 
