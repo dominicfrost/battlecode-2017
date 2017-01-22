@@ -7,9 +7,9 @@ abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .1F;
     private final int BULLETS_TO_WIN = 10000;
-    private final int ROBOT_ID = 10800;
-    private final int MIN_ROUND = 356;
-    private final int MAX_ROUND = 360;
+    private final int ROBOT_ID = 11088;
+    private final int MIN_ROUND = 371;
+    private final int MAX_ROUND = 371;
     private final int ATTACK_CONSIDERATION_DISTANCE = 3;
 
     private final int CIRCLING_GRANULARITY = 8;

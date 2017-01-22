@@ -64,6 +64,7 @@ public class Lumberjack extends Circle {
             if (raloc != null) {
                 rc.setIndicatorLine(location, raloc.location, 0, 0, 255);
                 moveCirclingLocation(raloc.location, raloc.type.bodyRadius);
+                if (atCircleGoal(raloc.location, raloc.type.bodyRadius) && !hasAttacked) strike();
             }
         } else {
             rc.setIndicatorLine(location, nearestAttacker, 0,0,255);
@@ -91,22 +92,6 @@ public class Lumberjack extends Circle {
         }
 
         randomSafeMove(randomDirection());
-    }
-
-    @Override
-    protected void moveCirclingLocation(MapLocation goal, float goalRadius) throws GameActionException {
-        if (hasMoved) return;
-        if (atCircleGoal(goal, goalRadius)) return;
-
-        // If i'm not close enough
-        debug("moveCirclingLocation " + location.distanceSquaredTo(goal) + "  "+ sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius) + " " + location.add(location.directionTo(goal), myType.strideRadius));
-        if (location.distanceSquaredTo(goal) > sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius)) {
-            debug("MOVEWITHBUGG");
-            moveWithBugger(goal, 0);
-            return;
-        }
-
-        moveInOnGoal(goal, goalRadius);
     }
 
     @Override
