@@ -13,7 +13,7 @@ public class Gardener extends Robot {
     private final int MIDDLE_CLASS_THRESHOLD = 20;
     private final int UPPER_CLASS_THRESHOLD = 40;
 
-    private final float GARDEN_SPACE = (float) Math.pow((double) GameConstants.BULLET_TREE_RADIUS * 4 + RobotType.GARDENER.bodyRadius * 2, 2);
+    private final float GARDEN_SPACE = sqrFloat(GameConstants.BULLET_TREE_RADIUS * 4 + RobotType.GARDENER.bodyRadius) + .001F;
 
     private boolean isBuildReady;
 
@@ -139,17 +139,39 @@ public class Gardener extends Robot {
     private void findingGarden() throws GameActionException {
         gardenLocation = findGarden();
         if (gardenLocation == null) {
-            Direction sd = randomSpawnDir(RobotType.LUMBERJACK);
-            if (sd != null) trySpawn(RobotType.LUMBERJACK, sd);
-
-            randomSafeMove(randomDirection());
-
-            sd = randomSpawnDir(RobotType.LUMBERJACK);
-            if (sd != null) trySpawn(RobotType.LUMBERJACK, sd);
+            cantFindGarden();
             return;
         }
         setMovingToGarden();
         moveToGarden();
+    }
+
+    private void cantFindGarden() throws GameActionException {
+//        stayAwayFromAllies();
+        if (closeNeutralTrees()) {
+            Direction sd = randomSpawnDir(RobotType.LUMBERJACK);
+            if (sd != null) trySpawn(RobotType.LUMBERJACK, sd);
+        } else {
+//            randomSafeMove(location.directionTo(allyArchonLocs[rc.getID() % allyArchonLocs.length]));
+            stayAwayFromAllieGardenerAndArchons();
+        }
+    }
+
+    protected void stayAwayFromAllieGardenerAndArchons() throws GameActionException {
+        for (RobotInfo ri : nearbyAllies) {
+            if ((ri.type.equals(RobotType.ARCHON) || ri.type.equals(RobotType.GARDENER)) &&
+                    location.distanceSquaredTo(ri.location) < sqrFloat(ri.type.bodyRadius + 4F + myType.bodyRadius)) {
+                randomSafeMove(ri.location.directionTo(location));
+                return;
+            }
+        }
+    }
+
+    private boolean closeNeutralTrees() {
+        for (TreeInfo ti : nearbyTrees)
+            if (!ti.team.equals(myTeam) && location.distanceSquaredTo(ti.location) < sqrFloat(myType.bodyRadius + 1F + ti.radius)) return true;
+
+        return false;
     }
 
     private void setAtGarden() {
@@ -261,9 +283,9 @@ public class Gardener extends Robot {
             nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
             nextLoc = loc.add(nextDir, myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS);
             if (!rc.canSenseAllOfCircle(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
-            if (!rc.onTheMap(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
+//            if (!rc.onTheMap(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
             if (locInGardenerRange(nextLoc)) return false;
-            if (!rc.canSenseAllOfCircle(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
+//            if (!rc.canSenseAllOfCircle(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
             if (rc.isCircleOccupiedExceptByThisRobot(nextLoc, GameConstants.BULLET_TREE_RADIUS)) return false;
         }
         return true;

@@ -67,36 +67,6 @@ public class Archon extends Robot {
     }
 
     private void staySafeAroundMyGardener() throws GameActionException {
-//        Direction toMove = null;
-//        Direction startDir = location.directionTo(myGardener.location);
-//        float nextHealth;
-//        float minHealth = damageAtLocation(location);
-//
-//        Direction next;
-//        for (int i = 0; i < 4; i++) {
-//            next = startDir.rotateRightDegrees(i * 30);
-//            if (!locInGarden(location.add(next)) && rc.canMove(next)) {
-//                nextHealth = damageAtLocation(location.add(next));
-//                if (nextHealth < minHealth) {
-//                    toMove = next;
-//                    minHealth = nextHealth;
-//                }
-//            }
-//
-//            next = startDir.rotateLeftDegrees(i * 30);
-//            if (!locInGarden(location.add(next)) && rc.canMove(next)) {
-//                nextHealth = damageAtLocation(location.add(next));
-//                if (nextHealth < minHealth) {
-//                    toMove = next;
-//                    minHealth = nextHealth;
-//                }
-//            }
-//        }
-//
-//        if (toMove != null && rc.canMove(toMove)) {
-//            move(toMove);
-//        }
-
         float avgX = 0;
         float avgY = 0;
         int count = 0;
@@ -104,6 +74,10 @@ public class Archon extends Robot {
             avgX += e.location.x;
             avgY += e.location.y;
             count++;
+        }
+        if (count == 0) {
+            stayAwayFromAllies();
+            return;
         }
         randomSafeMove(location.directionTo(new MapLocation(avgX / count, avgY / count)).opposite());
     }

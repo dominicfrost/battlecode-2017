@@ -64,7 +64,9 @@ public class Lumberjack extends Circle {
             if (raloc != null) {
                 rc.setIndicatorLine(location, raloc.location, 0, 0, 255);
                 moveCirclingLocation(raloc.location, raloc.type.bodyRadius);
-                if (atCircleGoal(raloc.location, raloc.type.bodyRadius) && !hasAttacked) strike();
+                if (atCircleGoal(raloc.location, raloc.type.bodyRadius) && !hasAttacked) {
+                    strike();
+                }
             }
         } else {
             rc.setIndicatorLine(location, nearestAttacker, 0,0,255);
@@ -91,17 +93,18 @@ public class Lumberjack extends Circle {
             return;
         }
 
-        randomSafeMove(randomDirection());
+        stayAwayFromAllies();
     }
 
     @Override
     protected void attackCircleGoal(MapLocation nearestTree, float goalRadius) throws GameActionException {
         if (hasAttacked) return;
         debug("!atCircleGoal " + !atCircleGoal(nearestTree, goalRadius));
-        if (!atCircleGoal(nearestTree, goalRadius)) return;
-        TreeInfo ti = rc.senseTreeAtLocation(nearestTree);
-        if (ti == null) return;
-        chop(ti.getID());
+//        if (!atCircleGoal(nearestTree, goalRadius)) return;
+//        TreeInfo ti = rc.senseTreeAtLocation(nearestTree);
+//        if (ti == null) return;
+//        chop(ti.getID());
+        chopAnyOppTree();
     }
 
 
@@ -115,10 +118,10 @@ public class Lumberjack extends Circle {
         }
     }
 
-    protected void chopAnyTree() throws GameActionException {
+    protected void chopAnyOppTree() throws GameActionException {
         if (hasAttacked) return;
         for (TreeInfo ti: nearbyTrees) {
-            if (ti.containedRobot != null && rc.canChop(ti.getID())) {
+            if (!ti.team.equals(myTeam) && rc.canChop(ti.getID())) {
                 chop(ti.getID());
                 return;
             }

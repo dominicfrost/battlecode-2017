@@ -34,7 +34,8 @@ abstract public class Circle extends Bugger {
 
     protected boolean atCircleGoal(MapLocation goal, float goalRadius) {
         float distanceToCenterSquared = sqrFloat(goalRadius + myType.bodyRadius);
-        return location.distanceSquaredTo(goal) <= distanceToCenterSquared + .001F;
+        debug("distanceToCenterSquared " + distanceToCenterSquared + " location.distanceSquaredTo(goal) " + location.distanceSquaredTo(goal)) ;
+        return location.distanceSquaredTo(goal) <= (distanceToCenterSquared + .001F);
     }
 
     protected void moveInOnGoal(MapLocation goal, float goalRadius) throws GameActionException {

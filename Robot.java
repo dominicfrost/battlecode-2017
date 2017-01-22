@@ -7,13 +7,10 @@ abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .1F;
     private final int BULLETS_TO_WIN = 10000;
-    private final int ROBOT_ID = 11088;
-    private final int MIN_ROUND = 371;
-    private final int MAX_ROUND = 371;
-    private final int ATTACK_CONSIDERATION_DISTANCE = 3;
+    private final int ROBOT_ID = 10676;
+    private final int MIN_ROUND = 280;
+    private final int MAX_ROUND = 288;
 
-    private final int CIRCLING_GRANULARITY = 8;
-    private final float CIRCLING_DEGREE_INTERVAL = 360.0F / CIRCLING_GRANULARITY;
     private final int TRY_MOVE_DEGREE_OFFSET = 10;
     private final int RANDOM_MOVE_GRANULARITY = 60;
 
@@ -23,6 +20,7 @@ abstract public class Robot {
     protected Team enemyTeam;
     protected RobotType myType;
     protected MapLocation[] enemyArchonLocs;
+    protected MapLocation[] allyArchonLocs;
 
     protected boolean hasMoved;
     protected boolean hasAttacked;
@@ -35,7 +33,6 @@ abstract public class Robot {
     protected RobotInfo[] nearbyEnemies;
     protected RobotInfo[] nearbyAllies;
     protected TreeInfo[] nearbyTrees;
-    protected MapLocation home;
     protected float bulletCount;
 
 
@@ -66,6 +63,7 @@ abstract public class Robot {
         enemyTeam = myTeam.opponent();
         myType = rc.getType();
         enemyArchonLocs = rc.getInitialArchonLocations(enemyTeam);
+        allyArchonLocs = rc.getInitialArchonLocations(myTeam);
     }
 
     protected void initRoundState() throws GameActionException {
@@ -82,6 +80,10 @@ abstract public class Robot {
         nextRoundBullets = advanceBullets(nearbyBullets);
         if (bulletCount >= BULLETS_TO_WIN) {
             rc.donate(BULLETS_TO_WIN);
+        }
+
+        if (rc.getRoundNum() == rc.getRoundLimit()) {
+            rc.donate(rc.getTeamBullets());
         }
     }
 
@@ -127,6 +129,8 @@ abstract public class Robot {
     }
 
     protected boolean tryMove(Direction dir) throws GameActionException {
+        if (hasMoved) return false;
+
         // First, try intended direction
         if (rc.canMove(dir)) {
             move(dir);
@@ -158,6 +162,8 @@ abstract public class Robot {
 
 
     protected boolean randomSafeMove(Direction startDir) throws GameActionException {
+        if (hasMoved) return false;
+
         Direction toMove = null;
         Direction next;
         float nextHealth;
@@ -383,23 +389,23 @@ abstract public class Robot {
 
     private void addSingleBulletToNearby(Direction dir) {
         nextRoundBullets = Arrays.copyOf(nextRoundBullets, nextRoundBullets.length + 1);
-        nextRoundBullets[nearbyBullets.length - 1] = newBullet(dir);
+        nextRoundBullets[nextRoundBullets.length - 1] = newBullet(dir);
     }
 
     private void addTriadBulletToNearby(Direction dir) {
         nextRoundBullets = Arrays.copyOf(nextRoundBullets, nextRoundBullets.length + 3);
-        nextRoundBullets[nearbyBullets.length - 1] = newBullet(dir);
-        nextRoundBullets[nearbyBullets.length - 2] = newBullet(dir.rotateRightDegrees(20));
-        nextRoundBullets[nearbyBullets.length - 3] = newBullet(dir.rotateLeftDegrees(20));
+        nextRoundBullets[nextRoundBullets.length - 1] = newBullet(dir);
+        nextRoundBullets[nextRoundBullets.length - 2] = newBullet(dir.rotateRightDegrees(20));
+        nextRoundBullets[nextRoundBullets.length - 3] = newBullet(dir.rotateLeftDegrees(20));
     }
 
     private void addPentadBulletToNearby(Direction dir) {
         nextRoundBullets = Arrays.copyOf(nextRoundBullets, nextRoundBullets.length + 5);
-        nextRoundBullets[nearbyBullets.length - 1] = newBullet(dir);
-        nextRoundBullets[nearbyBullets.length - 2] = newBullet(dir.rotateRightDegrees(15));
-        nextRoundBullets[nearbyBullets.length - 3] = newBullet(dir.rotateLeftDegrees(15));
-        nextRoundBullets[nearbyBullets.length - 4] = newBullet(dir.rotateRightDegrees(30));
-        nextRoundBullets[nearbyBullets.length - 5] = newBullet(dir.rotateLeftDegrees(30));
+        nextRoundBullets[nextRoundBullets.length - 1] = newBullet(dir);
+        nextRoundBullets[nextRoundBullets.length - 2] = newBullet(dir.rotateRightDegrees(15));
+        nextRoundBullets[nextRoundBullets.length - 3] = newBullet(dir.rotateLeftDegrees(15));
+        nextRoundBullets[nextRoundBullets.length - 4] = newBullet(dir.rotateRightDegrees(30));
+        nextRoundBullets[nextRoundBullets.length - 5] = newBullet(dir.rotateLeftDegrees(30));
     }
 
     private BulletInfo newBullet(Direction dir) {
@@ -561,5 +567,15 @@ abstract public class Robot {
             }
         }
         return closest;
+    }
+
+    protected void stayAwayFromAllies() throws GameActionException {
+        float paddingForGardener = myType.equals(RobotType.GARDENER) ? 2F : 0F;
+        for (RobotInfo ri : nearbyAllies) {
+            if (location.distanceSquaredTo(ri.location) < sqrFloat(ri.type.bodyRadius + 2F + myType.bodyRadius + paddingForGardener)) {
+                randomSafeMove(ri.location.directionTo(location));
+                return;
+            }
+        }
     }
 }
