@@ -31,32 +31,42 @@ public class Lumberjack extends Circle {
     }
 
     private void circleInOnTree(MapLocation nearestTree) throws GameActionException {
-        rc.setIndicatorLine(location, nearestTree, 0,0,255);
+        TreeInfo treeInTheWay = rc.senseTreeAtLocation(location.add(location.directionTo(nearestTree), myType.strideRadius + myType.bodyRadius));
+        if (treeInTheWay != null && !treeInTheWay.team.equals(myTeam)) {
+            moveCirclingLocation(treeInTheWay.location, treeInTheWay.radius);
+            attackCircleGoal(treeInTheWay.location, treeInTheWay.radius);
+            return;
+        }
+
         if (rc.canSenseLocation(nearestTree)) {
             TreeInfo taloc = rc.senseTreeAtLocation(nearestTree);
             if (taloc == null)
                 taloc = getActualNearestOppTree(nearestTree);
 
             if (taloc != null) {
+                rc.setIndicatorLine(location, taloc.location, 0,0,255);
                 moveCirclingLocation(taloc.location, taloc.radius);
                 attackCircleGoal(taloc.location, taloc.radius);
             }
         } else {
+            rc.setIndicatorLine(location, nearestTree, 0,0,255);
             moveCirclingLocation(nearestTree, 0);
             attackCircleGoal(nearestTree, 0);
         }
     }
 
     private void circleInOnEnemy(MapLocation nearestAttacker) throws GameActionException {
-        rc.setIndicatorLine(location, nearestAttacker, 0,0,255);
         if (rc.canSenseLocation(nearestAttacker)) {
             RobotInfo raloc = rc.senseRobotAtLocation(nearestAttacker);
             if (raloc == null)
                 raloc = getActualNearestEnemy(nearestAttacker);
 
-            if (raloc != null)
+            if (raloc != null) {
+                rc.setIndicatorLine(location, raloc.location, 0, 0, 255);
                 moveCirclingLocation(raloc.location, raloc.type.bodyRadius);
+            }
         } else {
+            rc.setIndicatorLine(location, nearestAttacker, 0,0,255);
             moveCirclingLocation(nearestAttacker, 0);
         }
     }
@@ -81,6 +91,22 @@ public class Lumberjack extends Circle {
         }
 
         randomSafeMove(randomDirection());
+    }
+
+    @Override
+    protected void moveCirclingLocation(MapLocation goal, float goalRadius) throws GameActionException {
+        if (hasMoved) return;
+        if (atCircleGoal(goal, goalRadius)) return;
+
+        // If i'm not close enough
+        debug("moveCirclingLocation " + location.distanceSquaredTo(goal) + "  "+ sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius) + " " + location.add(location.directionTo(goal), myType.strideRadius));
+        if (location.distanceSquaredTo(goal) > sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius)) {
+            debug("MOVEWITHBUGG");
+            moveWithBugger(goal, 0);
+            return;
+        }
+
+        moveInOnGoal(goal, goalRadius);
     }
 
     @Override

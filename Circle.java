@@ -37,15 +37,18 @@ abstract public class Circle extends Bugger {
         return location.distanceSquaredTo(goal) <= distanceToCenterSquared + .001F;
     }
 
-    private void moveInOnGoal(MapLocation goal, float goalRadius) throws GameActionException {
+    protected void moveInOnGoal(MapLocation goal, float goalRadius) throws GameActionException {
         Direction fromGoal = goal.directionTo(location);
         Direction right, left;
         MapLocation next;
+        MapLocation valid = null;
         debug("moveInOnGoal");
 
         int count = 0;
 
         next = nextLoc(goal, goalRadius, fromGoal);
+        if (!rc.isCircleOccupiedExceptByThisRobot(next, myType.bodyRadius)) valid = next;
+        debugIndicator(next);
         if (rc.canMove(next)) {
             move(next);
             return;
@@ -55,6 +58,8 @@ abstract public class Circle extends Bugger {
             right = fromGoal.rotateRightDegrees(MOVE_IN_GRANULARITY * count);
             next = nextLoc(goal, goalRadius, right);
             if (location.distanceSquaredTo(next) > myType.strideRadius) break;
+            if (valid == null && !rc.isCircleOccupiedExceptByThisRobot(next, myType.bodyRadius)) valid = next;
+            debugIndicator(next);
             if (rc.canMove(next)) {
                 move(next);
                 return;
@@ -63,6 +68,8 @@ abstract public class Circle extends Bugger {
             left = fromGoal.rotateLeftDegrees(MOVE_IN_GRANULARITY * count);
             next = nextLoc(goal, goalRadius, left);
             if (location.distanceSquaredTo(next) > myType.strideRadius) break;
+            debugIndicator(next);
+            if (valid == null && !rc.isCircleOccupiedExceptByThisRobot(next, myType.bodyRadius)) valid = next;
             if (rc.canMove(next)) {
                 move(next);
                 return;
@@ -70,11 +77,15 @@ abstract public class Circle extends Bugger {
 
             count++;
         }
-        debug("moveWithBugger");
-        tryMove(location.directionTo(goal));
+        debug("valid is " + (valid==null));
+
+        if (valid != null)
+            tryMove(location.directionTo(valid));
+        else
+            tryMove(location.directionTo(nextLoc(goal, goalRadius, fromGoal)));
     }
 
-    private MapLocation nextLoc(MapLocation goal, float goalRadius, Direction fromGoal) {
+    protected MapLocation nextLoc(MapLocation goal, float goalRadius, Direction fromGoal) {
         return goal.add(fromGoal, goalRadius + myType.bodyRadius);
     }
 }

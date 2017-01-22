@@ -8,8 +8,8 @@ abstract public class Robot {
     protected final float WAY_CLOSE_DISTANCE = .1F;
     private final int BULLETS_TO_WIN = 10000;
     private final int ROBOT_ID = 10800;
-    private final int MIN_ROUND = 309;
-    private final int MAX_ROUND = 310;
+    private final int MIN_ROUND = 356;
+    private final int MAX_ROUND = 360;
     private final int ATTACK_CONSIDERATION_DISTANCE = 3;
 
     private final int CIRCLING_GRANULARITY = 8;
@@ -382,24 +382,24 @@ abstract public class Robot {
     }
 
     private void addSingleBulletToNearby(Direction dir) {
-        nearbyBullets = Arrays.copyOf(nearbyBullets, nearbyBullets.length + 1);
-        nearbyBullets[nearbyBullets.length - 1] = newBullet(dir);
+        nextRoundBullets = Arrays.copyOf(nextRoundBullets, nextRoundBullets.length + 1);
+        nextRoundBullets[nearbyBullets.length - 1] = newBullet(dir);
     }
 
     private void addTriadBulletToNearby(Direction dir) {
-        nearbyBullets = Arrays.copyOf(nearbyBullets, nearbyBullets.length + 3);
-        nearbyBullets[nearbyBullets.length - 1] = newBullet(dir);
-        nearbyBullets[nearbyBullets.length - 2] = newBullet(dir.rotateRightDegrees(20));
-        nearbyBullets[nearbyBullets.length - 3] = newBullet(dir.rotateLeftDegrees(20));
+        nextRoundBullets = Arrays.copyOf(nextRoundBullets, nextRoundBullets.length + 3);
+        nextRoundBullets[nearbyBullets.length - 1] = newBullet(dir);
+        nextRoundBullets[nearbyBullets.length - 2] = newBullet(dir.rotateRightDegrees(20));
+        nextRoundBullets[nearbyBullets.length - 3] = newBullet(dir.rotateLeftDegrees(20));
     }
 
     private void addPentadBulletToNearby(Direction dir) {
-        nearbyBullets = Arrays.copyOf(nearbyBullets, nearbyBullets.length + 5);
-        nearbyBullets[nearbyBullets.length - 1] = newBullet(dir);
-        nearbyBullets[nearbyBullets.length - 2] = newBullet(dir.rotateRightDegrees(15));
-        nearbyBullets[nearbyBullets.length - 3] = newBullet(dir.rotateLeftDegrees(15));
-        nearbyBullets[nearbyBullets.length - 4] = newBullet(dir.rotateRightDegrees(30));
-        nearbyBullets[nearbyBullets.length - 5] = newBullet(dir.rotateLeftDegrees(30));
+        nextRoundBullets = Arrays.copyOf(nextRoundBullets, nextRoundBullets.length + 5);
+        nextRoundBullets[nearbyBullets.length - 1] = newBullet(dir);
+        nextRoundBullets[nearbyBullets.length - 2] = newBullet(dir.rotateRightDegrees(15));
+        nextRoundBullets[nearbyBullets.length - 3] = newBullet(dir.rotateLeftDegrees(15));
+        nextRoundBullets[nearbyBullets.length - 4] = newBullet(dir.rotateRightDegrees(30));
+        nextRoundBullets[nearbyBullets.length - 5] = newBullet(dir.rotateLeftDegrees(30));
     }
 
     private BulletInfo newBullet(Direction dir) {
@@ -440,6 +440,9 @@ abstract public class Robot {
                 minDist = nextDist;
                 closest = ti.location;
             }
+//            if (nextDist < 12) {
+//                broadcastChannel = broadcastLocToNextOpenChan(broadcastChannel, roundNum, ti.location);
+//            }
         }
 
         if (closest != null) broadcastLocToNextOpenChan(broadcastChannel, roundNum, closest);
@@ -500,6 +503,7 @@ abstract public class Robot {
         float nextDist;
         while (true) {
             locInChan = Coms.decodeLocation(rc.readBroadcast(broadcastChannel));
+            if (locInChan!=null)debug("loc in chan " + locInChan.location + " "  + locInChan.roundNum);
             if (locInChan == null || locInChan.roundNum < roundFilter) return closestLoc;
             nextDist = location.distanceSquaredTo(locInChan.location);
             if (nextDist < minDist) {
