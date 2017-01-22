@@ -6,7 +6,6 @@ import java.util.HashMap;
 
 public class Scout extends Robot {
     private TreeInfo[] neutralTrees;
-    private boolean hasShakenTree;
     private RobotInfo harassee;
     private HashMap<Integer, Boolean> shakenTrees;
     private ScoutState state;
@@ -22,6 +21,7 @@ public class Scout extends Robot {
         super(_rc);
     }
 
+    @Override
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
         setScouting();
@@ -29,11 +29,11 @@ public class Scout extends Robot {
         scoutingDirection = rc.getLocation().directionTo(enemyArchonLocs[rc.getID() % enemyArchonLocs.length]);
     }
 
+    @Override
     protected void initRoundState() throws GameActionException {
         super.initRoundState();
         setNeutralTrees();
         sortEnemies();
-        hasShakenTree = false;
     }
 
     private void setNeutralTrees() {
@@ -65,6 +65,7 @@ public class Scout extends Robot {
         }
         tryShakeTrees();
         attackIfWayClose();
+        pieCountAttack();
     }
 
     private void setScouting() {
@@ -93,7 +94,7 @@ public class Scout extends Robot {
         if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
             scoutingDirection = randomDirection();
         }
-        tryMove(scoutingDirection);
+        randomSafeMove(scoutingDirection);
     }
 
     private void setHarasing(RobotInfo newHarassee) throws GameActionException {
@@ -114,7 +115,7 @@ public class Scout extends Robot {
 
         MapLocation dest = findSpotAroundHarassee();
         if (dest == null) {
-            tryMove(location.directionTo(harassee.location));
+            randomSafeMove(location.directionTo(harassee.location));
             return;
         }
 
@@ -123,7 +124,9 @@ public class Scout extends Robot {
             return;
         }
 
-        tryMove(location.directionTo(dest));
+        Direction toMove = location.directionTo(dest);
+        if (toMove == null) return;
+        randomSafeMove(toMove);
     }
 
     private void setShaking() throws GameActionException {
@@ -147,7 +150,7 @@ public class Scout extends Robot {
         }
 
         rc.setIndicatorLine(location, neutralTrees[0].location, 0, 255,0);
-        tryMove(location.directionTo(neutralTrees[0].location));
+        randomSafeMove(location.directionTo(neutralTrees[0].location));
     }
 
     private RobotInfo findHarasee() {
@@ -159,7 +162,8 @@ public class Scout extends Robot {
         return null;
     }
 
-    private void tryShakeTrees() throws GameActionException {
+    @Override
+    protected void tryShakeTrees() throws GameActionException {
         if (hasShakenTree) return;
         for (TreeInfo ti: neutralTrees) {
             if (!closeEnoughToShake(ti)) return;
@@ -171,13 +175,13 @@ public class Scout extends Robot {
         return location.distanceSquaredTo(ti.location) < ti.radius + myType.bodyRadius + 1F;
     }
 
-    private boolean tryShakeTree(TreeInfo ti) throws GameActionException {
-        if (rc.canShake(ti.getID())) {
-            rc.shake(ti.getID());
+    @Override
+    protected boolean tryShakeTree(TreeInfo ti) throws GameActionException {
+        if (super.tryShakeTree(ti)) {
             shakenTrees.put(ti.getID(), true);
-            hasShakenTree = true;
             return true;
         }
+
         return false;
     }
 
@@ -186,26 +190,26 @@ public class Scout extends Robot {
             int currentRoundNum = rc.getRoundNum();
             // write to the first AOI channel that is stale ( > 100 rounds old)
             DecodedLocation loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_1));
-            if (loc.roundNum == 0 || currentRoundNum - loc.roundNum > 100) {
+            if (loc == null || currentRoundNum - loc.roundNum > 100) {
                 rc.broadcast(Coms.AREA_OF_INTEREST_1, Coms.encodeLocation(location, currentRoundNum));
                 return;
             }
 
             loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_2));
-            if (loc.roundNum == 0 || currentRoundNum - loc.roundNum > 100) {
+            if (loc == null || currentRoundNum - loc.roundNum > 100) {
                 rc.broadcast(Coms.AREA_OF_INTEREST_2, Coms.encodeLocation(location, currentRoundNum));
                 return;
             }
 
             loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_3));
-            if (loc.roundNum == 0 || currentRoundNum - loc.roundNum > 100) {
+            if (loc == null || currentRoundNum - loc.roundNum > 100) {
                 rc.broadcast(Coms.AREA_OF_INTEREST_3, Coms.encodeLocation(location, currentRoundNum));
             }
         }
     }
 
     private boolean canAttackHarasee() {
-        float distanceToCenterSquared = (float) Math.pow(harassee.type.bodyRadius + myType.bodyRadius, 2);
+        float distanceToCenterSquared = sqrFloat(harassee.type.bodyRadius + myType.bodyRadius);
         return location.distanceSquaredTo(harassee.location) <= distanceToCenterSquared;
     }
 

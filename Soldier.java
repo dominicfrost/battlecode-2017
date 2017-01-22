@@ -42,17 +42,17 @@ public class Soldier extends Robot {
 
         // look for an AOI
         DecodedLocation dl = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_1));
-        if (dl.roundNum != 0 && dl.roundNum - currentRound < 100) {
+        if (dl != null && dl.roundNum - currentRound < 100) {
             return dl.location;
         }
 
         dl = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_2));
-        if (dl.roundNum != 0 && dl.roundNum - currentRound < 100) {
+        if (dl != null && dl.roundNum - currentRound < 100) {
             return dl.location;
         }
 
         dl = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_3));
-        if (dl.roundNum != 0 && dl.roundNum - currentRound < 100) {
+        if (dl != null && dl.roundNum - currentRound < 100) {
             return dl.location;
         }
 

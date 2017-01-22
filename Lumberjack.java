@@ -4,8 +4,6 @@ import battlecode.common.*;
 public class Lumberjack extends Robot {
 
     private Bug bugger;
-    private RobotInfo myLumberJack;
-    private MapLocation targetTreeLocation;
 
     Lumberjack(RobotController _rc) {
         super(_rc);
@@ -15,148 +13,122 @@ public class Lumberjack extends Robot {
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
         bugger = new Bug(rc);
-        targetTreeLocation = null;
 
     }
 
     @Override
     protected void initRoundState() throws GameActionException {
         super.initRoundState();
-        if (targetTreeLocation == null) {
-            targetTreeLocation = getTargetTree();
-            bugger.setGoal(rc.getLocation(), targetTreeLocation, 4);
-        }
     }
 
     protected void doTurn() throws GameActionException {
-        if (!tryDodge()) {
-            boolean stayAndCut = false;
-            if (targetTreeLocation != null && rc.canChop(targetTreeLocation)){
-                stayAndCut = true;
-            }
-            if (!stayAndCut){
-                lumberJackMove();
-            }
-            if (!shakeOrCutTrees()){
-                strike();
-            }
+        tryDodge();
+
+        MapLocation nearestTree = nearestPeskyTree();
+        MapLocation nearestAttacker = nearestPeskyAttacker();
+
+        tryShakeTrees();
+        if (shouldStrike()) strike();
+        chopTreeWithRobot();
+
+        if (nearestTree == null && nearestAttacker == null) {
+            findNextSpot();
+        } else if (nearestAttacker == null || (nearestTree != null && location.distanceSquaredTo(nearestTree) < location.distanceSquaredTo(nearestAttacker))) {
+            rc.setIndicatorLine(location, nearestTree, 0,0,255);
+            moveToNearest(nearestTree);
+            tryChop(nearestTree);
+        } else {
+            rc.setIndicatorLine(location, nearestAttacker, 0,0,255);
+            moveToNearest(nearestAttacker);
         }
+
+        tryShakeTrees();
+        if (shouldStrike()) strike();
+        chopTreeWithRobot();
     }
 
-    protected MapLocation getTargetTree() throws GameActionException {
-        MapLocation targetTreeLoc = getNearestPeskyTree();
-        if (targetTreeLoc == null){
-            targetTreeLoc = getNearestTree();
-        }
-        return targetTreeLoc;
-    }
 
-    protected MapLocation getNearestPeskyTree() throws GameActionException {
-        MapLocation closestPeskyTree = null;
-        int broadcast = Coms.PESKY_TREES;
-        float minDist = 99999999.9f;
+    private void findNextSpot() throws GameActionException  {
+        float minDist = Float.MAX_VALUE;
+        MapLocation closestLoc = null;
+        float nextDist;
 
-        int xLoc = rc.readBroadcast(broadcast);
-        int yLoc = rc.readBroadcast(broadcast + 1);
-
-        while(xLoc != 0 && yLoc != 0){
-            MapLocation newLoc = new MapLocation(xLoc, yLoc);
-
-            float dist = newLoc.distanceSquaredTo(rc.getLocation());
-            if (dist < minDist){
-                minDist = dist;
-                closestPeskyTree = newLoc;
-            }
-            broadcast += 2;
-            xLoc = rc.readBroadcast(broadcast);
-            yLoc = rc.readBroadcast(broadcast + 1);
-        }
-        return closestPeskyTree;
-    }
-
-    protected MapLocation getNearestTree() throws GameActionException{
-        if (nearbyTrees == null){
-            return null;
-        }
-
-        MapLocation nearestTreeLoc = null;
-        float minDist = 999999.9f;
-        for (int i = 1; i < nearbyTrees.length; i++){
-            float dist = nearbyTrees[i].getLocation().distanceSquaredTo(location);
-            if (dist < minDist && nearbyTrees[i].getTeam() != rc.getTeam()){
-                minDist = dist;
-                nearestTreeLoc = nearbyTrees[i].getLocation();
+        for (TreeInfo ti: nearbyTrees) {
+            nextDist = location.distanceSquaredTo(ti.location);
+            if (ti.containedRobot != null && nextDist < minDist) {
+                minDist = nextDist;
+                closestLoc = ti.location;
             }
         }
-        return nearestTreeLoc;
+
+        if (closestLoc != null) {
+            randomSafeMove(location.directionTo(closestLoc));
+            return;
+        }
+
+        randomSafeMove(randomDirection());
     }
 
-    protected void lumberJackMove() throws GameActionException  {
-        if (!rc.hasMoved()) {
-            if (targetTreeLocation == null) {
-                randomSafeMove(randomDirection());
-            } else {
-                Direction moveDir = bugger.nextStride(rc.getLocation(), rc.senseNearbyTrees());
-                if (moveDir != null) {
-                    move(moveDir);
+    private void moveToNearest(MapLocation newGoal) throws GameActionException {
+//        if (bugger.goal() == null || bugger.goal().equals(newGoal)) {
+//            bugger.setGoal(location, newGoal, 0);
+//        }
+//
+//        Direction next = bugger.nextStride(location, nearbyTrees);
+//        if (next == null) {
+//            next = randomDirection();
+//        }
+        Direction next = location.directionTo(newGoal);
+        randomSafeMove(next);
+    }
+
+    private void tryChop(MapLocation nearestTree) throws GameActionException {
+        if (hasAttacked) return;
+        for (TreeInfo ti : nearbyTrees) {
+            if (ti.location.distanceSquaredTo(nearestTree) < 1F) {
+                if (rc.canChop(ti.getID())) {
+                    chop(ti.getID());
+                    return;
                 }
             }
         }
     }
 
-    protected boolean shakeOrCutTrees() throws GameActionException {
-        // if there's trees nearby
-        if (nearbyTrees != null && nearbyTrees.length > 0){
-            TreeInfo nearestTree = null;
-            float minDist = 99999999.9f;
-
-            for (int i = 0; i < nearbyTrees.length; i++){
-                // shake a tree
-                TreeInfo t = nearbyTrees[i];
-                if (checkForGoodies(t)){
-                    rc.shake(t.location);
-                }
-
-                // chop target
-                if (targetTreeLocation != null){
-                    float distToTarget = location.distanceSquaredTo(targetTreeLocation);
-                    if (distToTarget < 4.0){
-                        TreeInfo targetTree = rc.senseTreeAtLocation(targetTreeLocation);
-                        if (targetTree != null){
-                            if (targetTree.getHealth() < 5.0f){
-                                targetTreeLocation = null;
-                            }
-                            rc.chop(targetTree.getLocation());
-                            hasAttacked = true;
-                            return true;
-                        } else {
-                            targetTreeLocation = null;
-                        }
-                    }
-                }
-
-                // determine closest tree
-                float dist = t.getLocation().distanceSquaredTo(location);
-                if (dist < minDist && t.getTeam() != rc.getTeam()){
-                    nearestTree = t;
-                    minDist = dist;
-                }
-            }
-
-            // chop random tree
-            if (nearestTree != null && rc.canChop(nearestTree.getLocation())){
-                rc.chop(nearestTree.getLocation());
-                hasAttacked = true;
-                return true;
+    protected void chopTreeWithRobot() throws GameActionException {
+        if (hasAttacked) return;
+        for (TreeInfo ti: nearbyTrees) {
+            if (ti.containedRobot != null && rc.canChop(ti.getID())) {
+                rc.chop(ti.getID());
+                return;
             }
         }
-        return false;
     }
 
-    protected void strike() throws GameActionException{
-        if (nearbyEnemies.length > nearbyAllies.length){
-            rc.strike();
-            hasAttacked = true;
+    private boolean shouldStrike() {
+        if (hasAttacked) return false;
+
+        int count = 0;
+        for (RobotInfo e: nearbyEnemies) {
+            if (location.distanceSquaredTo(e.location) <= sqrFloat(2F + e.type.bodyRadius)) count++;
         }
+        for (RobotInfo a: nearbyAllies) {
+            if (location.distanceSquaredTo(a.location) <= sqrFloat(2F + a.type.bodyRadius)) count--;
+        }
+        return count > 0;
+    }
+
+    private void strike() throws GameActionException {
+        rc.strike();
+        hasAttacked = true;
+    }
+
+    private void chop(int id) throws GameActionException {
+        rc.chop(id);
+        hasAttacked = true;
+    }
+
+    private void chop(MapLocation l) throws GameActionException {
+        rc.chop(l);
+        hasAttacked = true;
     }
 }

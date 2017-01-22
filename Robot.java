@@ -26,6 +26,7 @@ abstract public class Robot {
 
     protected boolean hasMoved;
     protected boolean hasAttacked;
+    protected boolean hasShakenTree;
 
     protected MapLocation location;
     protected BulletInfo[] nearbyBullets;
@@ -69,6 +70,7 @@ abstract public class Robot {
     protected void initRoundState() throws GameActionException {
         hasMoved = false;
         hasAttacked = false;
+        hasShakenTree = false;
         location = rc.getLocation();
         nearbyBullets = rc.senseNearbyBullets();
         nearbyBots = rc.senseNearbyRobots();
@@ -113,6 +115,16 @@ abstract public class Robot {
         hasMoved = true;
     }
 
+    protected void shake(int id) throws GameActionException {
+        rc.shake(id);
+        hasShakenTree = true;
+    }
+
+    protected void shake(MapLocation l) throws GameActionException {
+        rc.shake(l);
+        hasShakenTree = true;
+    }
+
     protected boolean tryMove(Direction dir) throws GameActionException {
         // First, try intended direction
         if (rc.canMove(dir)) {
@@ -149,8 +161,7 @@ abstract public class Robot {
         Direction next;
         float nextHealth;
         float minHealth = Float.MAX_VALUE;
-
-        for (int i = 0; i < 360; i += RANDOM_MOVE_GRANULARITY) {
+        for (int i = 0; i <= 180; i += RANDOM_MOVE_GRANULARITY) {
             next = startDir.rotateRightDegrees(i);
             if (rc.canMove(next)) {
                 nextHealth = damageAtLocation(location.add(next));
@@ -158,6 +169,18 @@ abstract public class Robot {
                     toMove = next;
                     minHealth = nextHealth;
                 }
+                if (nextHealth == 0) break;
+            }
+
+            if (i == 180 || i == 0) continue;
+            next = startDir.rotateLeftDegrees(i);
+            if (rc.canMove(next)) {
+                nextHealth = damageAtLocation(location.add(next));
+                if (nextHealth < minHealth) {
+                    toMove = next;
+                    minHealth = nextHealth;
+                }
+                if (nextHealth == 0) break;
             }
         }
 
@@ -272,39 +295,6 @@ abstract public class Robot {
         return Arrays.stream(nearbyBots).filter(b -> b.team.equals(team)).toArray(RobotInfo[]::new);
     }
 
-    private MapLocation[] potentialDodgeLocations(double granularity) throws GameActionException {
-        double strideRadius = myType.strideRadius;
-        int steps = (int) (strideRadius / granularity);
-        MapLocation[] locs = new MapLocation[steps * steps];
-
-        for (int i = 0; i < steps; i++) {
-            for (int j = 0; j < steps; j++) {
-                MapLocation loc = new MapLocation(location.x + i, location.y + j);
-                locs[(i * steps) + j] = rc.onTheMap(loc) && willAnyBulletsCollideWithLocation(loc) ? loc : null;
-            }
-        }
-
-        // filter any null values out. TODO: check byte code used by this
-        return Arrays.stream(locs).filter(l -> l != null).toArray(MapLocation[]::new);
-    }
-
-    // Used to find a location to stand if you want to build something at location center
-    protected MapLocation findSpotAroundCircle(MapLocation center, float centerRadius, float revolverRadius) throws GameActionException {
-        float distanceToCenter = centerRadius + revolverRadius;
-
-        MapLocation nextLoc;
-        Direction nextDir = randomDirection();
-        for (int i = 0; i < CIRCLING_GRANULARITY; i++) {
-            nextDir = nextDir.rotateLeftDegrees(CIRCLING_DEGREE_INTERVAL * i);
-            nextLoc = center.add(nextDir, distanceToCenter);
-            if (rc.canSenseAllOfCircle(nextLoc, revolverRadius) &&
-                    rc.onTheMap(nextLoc) &&
-                    !rc.isCircleOccupied(nextLoc, revolverRadius)) return nextLoc;
-        }
-
-        return null;
-    }
-
     protected boolean attackIfWayClose() throws GameActionException {
         if (hasAttacked) return false;
         for (RobotInfo b : nearbyEnemies) {
@@ -317,6 +307,7 @@ abstract public class Robot {
     }
 
     protected boolean attackAndFleeIfWayClose() throws GameActionException {
+        if (hasAttacked) return false;
         for (RobotInfo b : nearbyEnemies) {
             if (location.distanceSquaredTo(b.location) <= Math.pow(b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE, 2)) {
                 spray(location.directionTo(b.location));
@@ -328,6 +319,7 @@ abstract public class Robot {
     }
 
     protected boolean pieCountAttack() throws GameActionException {
+        if (hasAttacked) return false;
         int numPieces = 12;
         int pieceDegrees = 360 / numPieces;
 
@@ -372,92 +364,6 @@ abstract public class Robot {
         return true;
     }
 
-    protected void accurateAttack() throws GameActionException {
-        if (nearbyEnemies.length > 0) {
-            System.out.println("STart " + Clock.getBytecodesLeft());
-            // get nearest enemy
-            RobotInfo closestEnemy = nearbyEnemies[0];
-            float closestEnemyDistance = Integer.MAX_VALUE;
-            for (int i = nearbyEnemies.length -1; i >= 0; i--) {
-                float dist = location.distanceSquaredTo(nearbyEnemies[i].location);
-                if (dist < closestEnemyDistance) {
-                    closestEnemyDistance = dist;
-                    closestEnemy = nearbyEnemies[i];
-                }
-            }
-
-
-            int singleDmg = 0;
-            int triadDmg = 0;
-            int pentadDmg = 0;
-            Direction dir = location.directionTo(closestEnemy.location);
-            float maxDist = ATTACK_CONSIDERATION_DISTANCE * myType.bulletSpeed;
-            float maxDistSqr = maxDist * maxDist;
-            for (int i = nearbyEnemies.length -1; i >= 0; i--) {
-                if (Clock.getBytecodesLeft() < 2000) break;
-                if (nearbyEnemies[i].location.equals(closestEnemy.location)) continue;
-                if (location.distanceSquaredTo(nearbyEnemies[i].location) < maxDistSqr) continue;
-                if (singleWillHit(dir, nearbyEnemies[i])) {
-                    singleDmg++;
-                    continue;
-                }
-                if (triadWillHit(dir, nearbyEnemies[i])){
-                    triadDmg++;
-                    continue;
-                }
-
-                if (pentadWillHit(dir, nearbyEnemies[i])) pentadDmg++;
-            }
-
-            for (int i = nearbyAllies.length -1; i >= 0; i--) {
-                if (Clock.getBytecodesLeft() < 2000) break; // We may shoot our guys at the price of goin over
-                if (location.distanceSquaredTo(nearbyAllies[i].location) > maxDistSqr) continue;
-                if (singleWillHit(dir, nearbyAllies[i])) {
-                    singleDmg--;
-                    continue;
-                }
-                if (triadWillHit(dir, nearbyAllies[i])){
-                    triadDmg--;
-                    continue;
-                }
-
-                if (pentadWillHit(dir, nearbyAllies[i])) pentadDmg--;
-            }
-
-            System.out.println("End " + Clock.getBytecodesLeft());
-            if (pentadDmg > singleDmg && pentadDmg > triadDmg && pentadDmg > 0 && rc.canFirePentadShot()) {
-                rc.firePentadShot(dir);
-            } else if (triadDmg > singleDmg && triadDmg > 0 && rc.canFireTriadShot()) {
-                rc.fireTriadShot(dir);
-            } else if (singleDmg > 0 && rc.canFireSingleShot()) {
-                rc.fireSingleShot(dir);
-            }
-        }
-    }
-
-    protected void attackNearestEnemy() throws GameActionException {
-        if (nearbyEnemies.length > 0) {
-            // get nearest enemy
-            RobotInfo closestEnemy = nearbyEnemies[0];
-            float closestEnemyDistance = Integer.MAX_VALUE;
-            for (int i = nearbyEnemies.length -1; i >= 0; i--) {
-                float dist = location.distanceSquaredTo(nearbyEnemies[i].location);
-                if (dist < closestEnemyDistance) {
-                    closestEnemyDistance = dist;
-                    closestEnemy = nearbyEnemies[i];
-                }
-            }
-
-            if (rc.canFirePentadShot()) {
-                rc.firePentadShot(location.directionTo(closestEnemy.location));
-            } else if (rc.canFireTriadShot()) {
-                rc.fireTriadShot(location.directionTo(closestEnemy.location));
-            } else if (rc.canFireSingleShot()) {
-                rc.fireSingleShot(location.directionTo(closestEnemy.location));
-            }
-        }
-    }
-
     protected void spray(Direction dir) throws GameActionException {
         if (rc.canFirePentadShot()) {
             rc.firePentadShot(dir);
@@ -471,76 +377,6 @@ abstract public class Robot {
         }
     }
 
-    private boolean singleWillHit(Direction shotDir, RobotInfo bot) {
-        MapLocation nextCenter;
-        for (int i = ATTACK_CONSIDERATION_DISTANCE; i > 0; i--) {
-            nextCenter = location.add(shotDir, i * myType.bulletSpeed);
-            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
-        }
-        return false;
-    }
-
-    private boolean triadWillHit(Direction shotDir, RobotInfo bot) {
-        MapLocation nextCenter;
-        Direction nextDir;
-        for (int i = ATTACK_CONSIDERATION_DISTANCE; i > 0; i--) {
-            nextDir = shotDir.rotateRightDegrees(20);
-            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
-            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
-
-            nextDir = shotDir.rotateLeftDegrees(20);
-            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
-            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
-        }
-        return false;
-    }
-
-    private boolean pentadWillHit(Direction shotDir, RobotInfo bot) {
-        MapLocation nextCenter;
-        Direction nextDir;
-        for (int i = ATTACK_CONSIDERATION_DISTANCE; i > 0; i--) {
-            nextDir = shotDir.rotateRightDegrees(15);
-            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
-            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
-
-            nextDir = shotDir.rotateLeftDegrees(15);
-            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
-            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
-
-            nextDir = shotDir.rotateRightDegrees(30);
-            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
-            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
-
-            nextDir = shotDir.rotateLeftDegrees(30);
-            nextCenter = location.add(nextDir, i * myType.bulletSpeed);
-            if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
-        }
-        return false;
-    }
-
-    private boolean willHit(Direction shotDir, RobotInfo bot, int numBullets, int separationDeg) {
-        int loopLimit = (numBullets - 1) / 2;
-        Direction nextDir;
-        MapLocation nextCenter;
-        for (int i = ATTACK_CONSIDERATION_DISTANCE; i > 0; i--) {
-            for (int j = loopLimit; j >= 0; j--) {
-                if (j == 0 ) {
-                    nextCenter = location.add(shotDir, i * myType.bulletSpeed);
-                    if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
-                } else {
-                    nextDir = shotDir.rotateRightDegrees(separationDeg * j);
-                    nextCenter = location.add(nextDir, i * myType.bulletSpeed);
-                    if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
-
-                    nextDir = shotDir.rotateLeftDegrees(separationDeg * j);
-                    nextCenter = location.add(nextDir, i * myType.bulletSpeed);
-                    if (pointInCircle(nextCenter, bot.location, bot.type.bodyRadius)) return true;
-                }
-            }
-        }
-        return false;
-    }
-
     protected boolean doCirclesOverlap(MapLocation locA, MapLocation locB, float radiusA, float radiusB) {
         double distance = Math.sqrt(locA.distanceSquaredTo(locB));
         return radiusA + radiusB >= distance;
@@ -550,10 +386,105 @@ abstract public class Robot {
         return radius > Math.sqrt(center.distanceSquaredTo(point));
     }
 
-    protected boolean checkForGoodies(TreeInfo tree) throws GameActionException{
-        if (rc.canShake(tree.location) && tree.containedBullets > 0 || tree.containedRobot != null){
+    protected boolean checkForGoodies(TreeInfo tree) throws GameActionException {
+        if (rc.canShake(tree.location) && tree.containedBullets > 0 || tree.containedRobot != null) {
             return true;
         }
         return false;
+    }
+
+    protected void postPeskyTrees() throws GameActionException {
+        if (nearbyTrees == null) return;
+
+        int roundNum = rc.getRoundNum();
+        int broadcastChannel = Coms.PESKY_TREES;
+
+
+        for (TreeInfo ti : nearbyTrees) {
+            if (ti.getTeam().equals(rc.getTeam())) continue;
+            broadcastChannel = broadcastLocToNextOpenChan(broadcastChannel, roundNum, ti.location);
+        }
+    }
+
+    protected void postPeskyAttackers() throws GameActionException {
+        if (nearbyEnemies == null) return;
+
+        int roundNum = rc.getRoundNum();
+        int broadcastChannel = Coms.PESKY_ATTACKERS;
+
+
+        for (RobotInfo ri : nearbyEnemies) {
+            broadcastChannel = broadcastLocToNextOpenChan(broadcastChannel, roundNum, ri.location);
+        }
+    }
+
+    private int broadcastLocToNextOpenChan(int broadcastChannel, int roundNum, MapLocation loc) throws GameActionException {
+        int roundFilter = roundNum - 1;
+        DecodedLocation locInChan;
+        while (true) {
+            // don't reuse a chan that has been posted to recently
+            locInChan = Coms.decodeLocation(rc.readBroadcast(broadcastChannel));
+            if (locInChan == null || locInChan.roundNum < roundFilter) {
+                rc.broadcast(broadcastChannel, Coms.encodeLocation(loc, roundNum));
+                rc.setIndicatorDot(loc, 0,0,0);
+
+//                System.out.println("WRITE TO " + broadcastChannel + " " + loc.toString());
+                return ++broadcastChannel;
+            } else {
+//                System.out.println("DIDNT WRITE TO " + broadcastChannel + " " + loc.toString());
+            }
+
+            broadcastChannel++;
+        }
+    }
+
+    protected MapLocation nearestPeskyTree() throws GameActionException {
+        return nearestLocationInLinearPost(Coms.PESKY_TREES);
+    }
+
+    protected MapLocation nearestPeskyAttacker() throws GameActionException {
+        return nearestLocationInLinearPost(Coms.PESKY_ATTACKERS);
+    }
+
+    private MapLocation nearestLocationInLinearPost(int broadcastChannel) throws GameActionException {
+        int roundNum = rc.getRoundNum();
+        int roundFilter = roundNum - 1;
+
+        DecodedLocation locInChan;
+        float minDist = Float.MAX_VALUE;
+        MapLocation closestLoc = null;
+        float nextDist;
+        while (true) {
+            locInChan = Coms.decodeLocation(rc.readBroadcast(broadcastChannel));
+//            System.out.println("READ FROM " + broadcastChannel + " " + (locInChan == null));
+            if (locInChan == null || locInChan.roundNum < roundFilter) return closestLoc;
+//            System.out.println("READ " + locInChan.location.toString());
+            nextDist = location.distanceSquaredTo(locInChan.location);
+            if (nextDist < minDist) {
+                minDist = nextDist;
+                closestLoc = locInChan.location;
+            }
+            broadcastChannel++;
+        }
+    }
+
+    protected void tryShakeTrees() throws GameActionException {
+        if (hasShakenTree) return;
+        for (TreeInfo ti: nearbyTrees) {
+            if (tryShakeTree(ti)) return;
+        }
+    }
+
+    protected boolean tryShakeTree(TreeInfo ti) throws GameActionException {
+        if (rc.canShake(ti.getID())) {
+            rc.shake(ti.getID());
+            hasShakenTree = true;
+            return true;
+        }
+        return false;
+    }
+
+    protected float sqrFloat(float a) {
+        return a * a;
     }
 }

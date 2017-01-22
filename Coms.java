@@ -10,6 +10,7 @@ public class Coms {
     public static final int AREA_OF_INTEREST_3 = 3;
 
     public static final int PESKY_TREES = 500;
+    public static final int PESKY_ATTACKERS = 1000;
 
     // Bitmasks
     private static final int tenBitMask =    0b1111111111;
@@ -31,6 +32,7 @@ public class Coms {
     }
 
     static DecodedLocation decodeLocation(int location) {
+        if (location == 0) return null;
         int x = location & tenBitMask;
         location >>= 10;
         int y = location & tenBitMask;

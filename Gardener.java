@@ -1,8 +1,6 @@
 package battlecode2017;
 import battlecode.common.*;
 
-import java.util.*;
-
 enum SocialClass {
     LOWER,
     MIDDLE,
@@ -63,6 +61,8 @@ public class Gardener extends Robot {
     }
 
     protected void doTurn() throws GameActionException {
+        postPeskyTrees();
+        postPeskyAttackers();
         spawnSpecialScout();
         switch (state) {
             case FINDING_GARDEN:
@@ -80,7 +80,7 @@ public class Gardener extends Robot {
     }
 
     private void spawnSpecialScout() throws GameActionException {
-        if (rc.getRoundNum() > 300) return;
+        if (rc.getRoundNum() > 200) return;
 
         Direction toSpawn;
         if (gardenLocation == null ) {
@@ -97,15 +97,15 @@ public class Gardener extends Robot {
         switch(socialClass) {
             case LOWER:
                 if (numBullets < 200) return;
-                spawnUnitsWithThresholds(100, 60, 100, 0);
+                spawnUnitsWithThresholds(0, 100, 100, 0);
                 break;
             case MIDDLE:
                 if (numBullets < 300) return;
-                spawnUnitsWithThresholds(100, 20, 100, 0);
+                spawnUnitsWithThresholds(0, 100, 100, 0);
                 break;
             case UPPER:
                 if (numBullets < 500) return;
-                spawnUnitsWithThresholds(100, 20, 50, 100);
+                spawnUnitsWithThresholds(0, 100, 50, 100);
                 break;
         }
     }
@@ -139,7 +139,13 @@ public class Gardener extends Robot {
     private void findingGarden() throws GameActionException {
         gardenLocation = findGarden();
         if (gardenLocation == null) {
+            Direction sd = randomSpawnDir(RobotType.LUMBERJACK);
+            if (sd != null) trySpawn(RobotType.LUMBERJACK, sd);
+
             randomSafeMove(randomDirection());
+
+            sd = randomSpawnDir(RobotType.LUMBERJACK);
+            if (sd != null) trySpawn(RobotType.LUMBERJACK, sd);
             return;
         }
         setMovingToGarden();
@@ -283,6 +289,7 @@ public class Gardener extends Robot {
     }
 
     private Direction randomSpawnDir(RobotType rt) {
+        if (!rc.hasRobotBuildRequirements(rt)) return null;
         Direction nextDir;
         for (int i = 0; i < 6; i++) {
             nextDir = Direction.getNorth().rotateRightDegrees(i * 60);

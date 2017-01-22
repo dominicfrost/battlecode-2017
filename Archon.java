@@ -1,7 +1,6 @@
 package battlecode2017;
 
 import battlecode.common.*;
-import java.lang.Math;
 
 public class Archon extends Robot {
     private final int ROUNDS_PER_GARDENER = 250;
@@ -17,16 +16,11 @@ public class Archon extends Robot {
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
         buildCount = 1;
-        postPeskyTrees();
-    }
-
-    @Override
-    protected void initRoundState() throws GameActionException {
-        super.initRoundState();
     }
 
     protected void doTurn() throws GameActionException {
         postPeskyTrees();
+        postPeskyAttackers();
         trySpawnGardener();
         if (tryDodge()) return; // think about immediate health
         moveToSafestLocation(); // think about long term health
@@ -106,21 +100,5 @@ public class Archon extends Robot {
 
     private boolean locInGarden(MapLocation loc) {
         return loc.distanceSquaredTo(myGardener.location) <= myType.bodyRadius + RobotType.GARDENER.bodyRadius + GameConstants.BULLET_TREE_RADIUS;
-    }
-
-    private void postPeskyTrees() throws GameActionException {
-        int broadcastChannel = Coms.PESKY_TREES;
-        if (nearbyTrees != null) {
-            for (int i = 0; i < nearbyTrees.length; i ++){
-                if (nearbyTrees[i].getTeam() != rc.getTeam()){
-                    MapLocation treeLoc = nearbyTrees[i].getLocation();
-                    rc.broadcast(broadcastChannel, Math.round(treeLoc.x));
-                    rc.broadcast(broadcastChannel + 1, Math.round(treeLoc.y));
-                    broadcastChannel += 2;
-                }
-            }
-        }
-        rc.broadcast(broadcastChannel, 0);
-        rc.broadcast(broadcastChannel + 1, 0);
     }
 }
