@@ -48,7 +48,6 @@ public class Scout extends Circle {
     }
 
     protected void doTurn() throws GameActionException {
-        debug("DO TURN " + location.toString());
         determineAreasOfInterest();
         attackIfWayClose();
         tryShakeTrees();
@@ -195,35 +194,5 @@ public class Scout extends Circle {
                 rc.broadcast(Coms.AREA_OF_INTEREST_3, Coms.encodeLocation(location, currentRoundNum));
             }
         }
-    }
-
-    private boolean canAttackHarasee() {
-        float distanceToCenterSquared = sqrFloat(harassee.type.bodyRadius + myType.bodyRadius);
-        return location.distanceSquaredTo(harassee.location) <= distanceToCenterSquared;
-    }
-
-    private MapLocation findSpotAroundHarassee() throws GameActionException {
-        float distanceToCenter = harassee.type.bodyRadius + myType.bodyRadius;
-
-        MapLocation nextLoc;
-        Direction nextDir = Direction.getNorth();
-        float dist;
-        MapLocation closestLoc = null;
-        float closestDist = Float.MAX_VALUE;
-
-        for (int i = 0; i < 6; i++) {
-            nextDir = nextDir.rotateLeftDegrees(60 * i);
-            nextLoc = harassee.location.add(nextDir, distanceToCenter);
-            if (rc.canSenseAllOfCircle(nextLoc, myType.bodyRadius) && rc.onTheMap(nextLoc) && rc.isLocationOccupiedByTree(nextLoc)) {
-                nextLoc = rc.senseTreeAtLocation(nextLoc).location;
-                dist = location.distanceSquaredTo(nextLoc);
-                if (dist < closestDist) {
-                    closestLoc = nextLoc;
-                    closestDist = dist;
-                }
-            }
-        }
-
-        return closestLoc;
     }
 }

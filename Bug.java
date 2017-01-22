@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 public class Bug {
     private final int ROTATION_GRANULARITY = 45;
-    private final int FOLLOW_WALL_GRANULARITY = 45 / 2;
+    private final int FOLLOW_WALL_GRANULARITY = 10;
     private int quitThresh;
     private RobotController rc;
     private MapLocation start;

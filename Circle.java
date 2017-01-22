@@ -16,7 +16,9 @@ abstract public class Circle extends Bugger {
         if (atCircleGoal(goal, goalRadius)) return;
 
         // If i'm not close enough
+        debug("moveCirclingLocation " + location.distanceSquaredTo(goal) + "  "+ sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius));
         if (location.distanceSquaredTo(goal) > sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius)) {
+            debug("MOVEWITHBUGG");
             moveWithBugger(goal, 0);
             return;
         }
@@ -24,22 +26,22 @@ abstract public class Circle extends Bugger {
         moveInOnGoal(goal, goalRadius);
     }
 
-    public void attackCircleGoal(MapLocation goal, float goalRadius) throws GameActionException {
-        debug("HasATt " + hasAttacked + " !atCircleGoal" + !atCircleGoal(goal, goalRadius));
+    protected void attackCircleGoal(MapLocation goal, float goalRadius) throws GameActionException {
         if (hasAttacked) return;
         if (!atCircleGoal(goal, goalRadius)) return;
         spray(location.directionTo(goal));
     }
 
-    private boolean atCircleGoal(MapLocation goal, float goalRadius) {
+    protected boolean atCircleGoal(MapLocation goal, float goalRadius) {
         float distanceToCenterSquared = sqrFloat(goalRadius + myType.bodyRadius);
-        return location.distanceSquaredTo(goal) <= distanceToCenterSquared;
+        return location.distanceSquaredTo(goal) <= distanceToCenterSquared + .001F;
     }
 
     private void moveInOnGoal(MapLocation goal, float goalRadius) throws GameActionException {
         Direction fromGoal = goal.directionTo(location);
         Direction right, left;
         MapLocation next;
+        debug("moveInOnGoal");
 
         int count = 0;
 
@@ -52,8 +54,7 @@ abstract public class Circle extends Bugger {
         while (true) {
             right = fromGoal.rotateRightDegrees(MOVE_IN_GRANULARITY * count);
             next = nextLoc(goal, goalRadius, right);
-            if (location.distanceSquaredTo(next) > myType.strideRadius) return;
-            debug(location.distanceSquaredTo(next) + " " + fromGoal + " " + location + " " + next);
+            if (location.distanceSquaredTo(next) > myType.strideRadius) break;
             if (rc.canMove(next)) {
                 move(next);
                 return;
@@ -61,7 +62,7 @@ abstract public class Circle extends Bugger {
 
             left = fromGoal.rotateLeftDegrees(MOVE_IN_GRANULARITY * count);
             next = nextLoc(goal, goalRadius, left);
-            if (location.distanceSquaredTo(next) > myType.strideRadius) return;
+            if (location.distanceSquaredTo(next) > myType.strideRadius) break;
             if (rc.canMove(next)) {
                 move(next);
                 return;
@@ -69,6 +70,8 @@ abstract public class Circle extends Bugger {
 
             count++;
         }
+        debug("moveWithBugger");
+        tryMove(location.directionTo(goal));
     }
 
     private MapLocation nextLoc(MapLocation goal, float goalRadius, Direction fromGoal) {

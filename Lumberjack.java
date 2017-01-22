@@ -1,24 +1,10 @@
 package battlecode2017;
 import battlecode.common.*;
 
-public class Lumberjack extends Robot {
-
-    private Bug bugger;
+public class Lumberjack extends Circle {
 
     Lumberjack(RobotController _rc) {
         super(_rc);
-    }
-
-    @Override
-    protected void initRobotState() throws GameActionException {
-        super.initRobotState();
-        bugger = new Bug(rc);
-
-    }
-
-    @Override
-    protected void initRoundState() throws GameActionException {
-        super.initRoundState();
     }
 
     protected void doTurn() throws GameActionException {
@@ -34,17 +20,45 @@ public class Lumberjack extends Robot {
         if (nearestTree == null && nearestAttacker == null) {
             findNextSpot();
         } else if (nearestAttacker == null || (nearestTree != null && location.distanceSquaredTo(nearestTree) < location.distanceSquaredTo(nearestAttacker))) {
-            rc.setIndicatorLine(location, nearestTree, 0,0,255);
-            moveToNearest(nearestTree);
-            tryChop(nearestTree);
+            circleInOnTree(nearestTree);
         } else {
-            rc.setIndicatorLine(location, nearestAttacker, 0,0,255);
-            moveToNearest(nearestAttacker);
+            circleInOnEnemy(nearestAttacker);
         }
 
         tryShakeTrees();
         if (shouldStrike()) strike();
         chopTreeWithRobot();
+    }
+
+    private void circleInOnTree(MapLocation nearestTree) throws GameActionException {
+        rc.setIndicatorLine(location, nearestTree, 0,0,255);
+        if (rc.canSenseLocation(nearestTree)) {
+            TreeInfo taloc = rc.senseTreeAtLocation(nearestTree);
+            if (taloc == null)
+                taloc = getActualNearestOppTree(nearestTree);
+
+            if (taloc != null) {
+                moveCirclingLocation(taloc.location, taloc.radius);
+                attackCircleGoal(taloc.location, taloc.radius);
+            }
+        } else {
+            moveCirclingLocation(nearestTree, 0);
+            attackCircleGoal(nearestTree, 0);
+        }
+    }
+
+    private void circleInOnEnemy(MapLocation nearestAttacker) throws GameActionException {
+        rc.setIndicatorLine(location, nearestAttacker, 0,0,255);
+        if (rc.canSenseLocation(nearestAttacker)) {
+            RobotInfo raloc = rc.senseRobotAtLocation(nearestAttacker);
+            if (raloc == null)
+                raloc = getActualNearestEnemy(nearestAttacker);
+
+            if (raloc != null)
+                moveCirclingLocation(raloc.location, raloc.type.bodyRadius);
+        } else {
+            moveCirclingLocation(nearestAttacker, 0);
+        }
     }
 
 
@@ -69,36 +83,32 @@ public class Lumberjack extends Robot {
         randomSafeMove(randomDirection());
     }
 
-    private void moveToNearest(MapLocation newGoal) throws GameActionException {
-        if (bugger.goal() == null || bugger.goal().equals(newGoal)) {
-            bugger.setGoal(location, newGoal, 0);
-        }
-
-        Direction next = bugger.nextStride(location, nearbyTrees);
-        if (next == null) {
-            next = randomDirection();
-        }
-//        Direction next = location.directionTo(newGoal);
-        randomSafeMove(next);
-    }
-
-    private void tryChop(MapLocation nearestTree) throws GameActionException {
+    @Override
+    protected void attackCircleGoal(MapLocation nearestTree, float goalRadius) throws GameActionException {
         if (hasAttacked) return;
-        for (TreeInfo ti : nearbyTrees) {
-            if (ti.location.distanceSquaredTo(nearestTree) < 1F) {
-                if (rc.canChop(ti.getID())) {
-                    chop(ti.getID());
-                    return;
-                }
-            }
-        }
+        debug("!atCircleGoal " + !atCircleGoal(nearestTree, goalRadius));
+        if (!atCircleGoal(nearestTree, goalRadius)) return;
+        TreeInfo ti = rc.senseTreeAtLocation(nearestTree);
+        if (ti == null) return;
+        chop(ti.getID());
     }
+
 
     protected void chopTreeWithRobot() throws GameActionException {
         if (hasAttacked) return;
         for (TreeInfo ti: nearbyTrees) {
             if (ti.containedRobot != null && rc.canChop(ti.getID())) {
-                rc.chop(ti.getID());
+                chop(ti.getID());
+                return;
+            }
+        }
+    }
+
+    protected void chopAnyTree() throws GameActionException {
+        if (hasAttacked) return;
+        for (TreeInfo ti: nearbyTrees) {
+            if (ti.containedRobot != null && rc.canChop(ti.getID())) {
+                chop(ti.getID());
                 return;
             }
         }

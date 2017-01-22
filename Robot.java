@@ -7,9 +7,9 @@ abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .1F;
     private final int BULLETS_TO_WIN = 10000;
-    private final int ROBOT_ID = 13562;
-    private final int MIN_ROUND = 214;
-    private final int MAX_ROUND = 217;
+    private final int ROBOT_ID = 10800;
+    private final int MIN_ROUND = 309;
+    private final int MAX_ROUND = 310;
     private final int ATTACK_CONSIDERATION_DISTANCE = 3;
 
     private final int CIRCLING_GRANULARITY = 8;
@@ -50,7 +50,9 @@ abstract public class Robot {
         while (true) {
             try {
                 initRoundState();
+                debug("doTurn " );
                 doTurn();
+                debug("doTurn/ " );
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -85,7 +87,7 @@ abstract public class Robot {
 
 
     protected void debug(String msg) {
-        if (debugCheck()) System.out.println(msg);
+        if (debugCheck()) System.out.println("BytecodesLeft: " + Clock.getBytecodesLeft() + " Round: " + rc.getRoundNum() + " Msg: " + msg);
     }
 
     protected void debugIndicator(MapLocation l) throws GameActionException {
@@ -131,7 +133,7 @@ abstract public class Robot {
             return true;
         }
 
-        int checksPerSide = (int) (240.0F / TRY_MOVE_DEGREE_OFFSET);
+        int checksPerSide = (int) (120.0F / TRY_MOVE_DEGREE_OFFSET);
 
         // Now try a bunch of similar angles
         int currentCheck = 1;
@@ -426,11 +428,21 @@ abstract public class Robot {
         int roundNum = rc.getRoundNum();
         int broadcastChannel = Coms.PESKY_TREES;
 
+        float minDist = Float.MAX_VALUE;
+        MapLocation closest = null;
+        float nextDist;
 
         for (TreeInfo ti : nearbyTrees) {
             if (ti.getTeam().equals(rc.getTeam())) continue;
-            broadcastChannel = broadcastLocToNextOpenChan(broadcastChannel, roundNum, ti.location);
+
+            nextDist = location.distanceSquaredTo(ti.location);
+            if (nextDist < minDist) {
+                minDist = nextDist;
+                closest = ti.location;
+            }
         }
+
+        if (closest != null) broadcastLocToNextOpenChan(broadcastChannel, roundNum, closest);
     }
 
     protected void postPeskyAttackers() throws GameActionException {
@@ -439,10 +451,19 @@ abstract public class Robot {
         int roundNum = rc.getRoundNum();
         int broadcastChannel = Coms.PESKY_ATTACKERS;
 
+        float minDist = Float.MAX_VALUE;
+        MapLocation closest = null;
+        float nextDist;
 
         for (RobotInfo ri : nearbyEnemies) {
-            broadcastChannel = broadcastLocToNextOpenChan(broadcastChannel, roundNum, ri.location);
+            nextDist = location.distanceSquaredTo(ri.location);
+            if (nextDist < minDist) {
+                minDist = nextDist;
+                closest = ri.location;
+            }
         }
+
+        if (closest != null) broadcastLocToNextOpenChan(broadcastChannel, roundNum, closest);
     }
 
     private int broadcastLocToNextOpenChan(int broadcastChannel, int roundNum, MapLocation loc) throws GameActionException {
@@ -498,8 +519,7 @@ abstract public class Robot {
 
     protected boolean tryShakeTree(TreeInfo ti) throws GameActionException {
         if (rc.canShake(ti.getID())) {
-            rc.shake(ti.getID());
-            hasShakenTree = true;
+            shake(ti.getID());
             return true;
         }
         return false;
@@ -509,5 +529,33 @@ abstract public class Robot {
         return a * a;
     }
 
+    protected RobotInfo getActualNearestEnemy(MapLocation loc) {
+        float minDist = Float.MAX_VALUE;
+        RobotInfo closest = null;
+        float nextDist;
 
+        for (RobotInfo e: nearbyEnemies) {
+            nextDist = loc.distanceSquaredTo(e.location);
+            if (nextDist < minDist) {
+                minDist = nextDist;
+                closest = e;
+            }
+        }
+        return closest;
+    }
+
+    protected TreeInfo getActualNearestOppTree(MapLocation loc) {
+        float minDist = Float.MAX_VALUE;
+        TreeInfo closest = null;
+        float nextDist;
+
+        for (TreeInfo e: nearbyTrees) {
+            nextDist = loc.distanceSquaredTo(e.location);
+            if (nextDist < minDist && !e.team.equals(myTeam)) {
+                minDist = nextDist;
+                closest = e;
+            }
+        }
+        return closest;
+    }
 }

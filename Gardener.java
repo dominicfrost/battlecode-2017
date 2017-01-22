@@ -63,7 +63,7 @@ public class Gardener extends Robot {
     protected void doTurn() throws GameActionException {
         postPeskyTrees();
         postPeskyAttackers();
-        spawnSpecialScout();
+//        spawnSpecialScout();
         switch (state) {
             case FINDING_GARDEN:
                 findingGarden();
@@ -101,11 +101,11 @@ public class Gardener extends Robot {
                 break;
             case MIDDLE:
                 if (numBullets < 300) return;
-                spawnUnitsWithThresholds(0, 0, 0, 0);
+                spawnUnitsWithThresholds(0, 100, 0, 0);
                 break;
             case UPPER:
                 if (numBullets < 500) return;
-                spawnUnitsWithThresholds(0, 0, 0, 0);
+                spawnUnitsWithThresholds(0, 100, 0, 0);
                 break;
         }
     }
