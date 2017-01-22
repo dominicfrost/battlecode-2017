@@ -5,11 +5,11 @@ import battlecode.common.*;
 
 abstract public class Robot {
     // DEBUG CONSTANTS
-    protected final float WAY_CLOSE_DISTANCE = 1F;
+    protected final float WAY_CLOSE_DISTANCE = .1F;
     private final int BULLETS_TO_WIN = 10000;
-    private final int ROBOT_ID = 10140;
-    private final int MIN_ROUND = 0;
-    private final int MAX_ROUND = 30;
+    private final int ROBOT_ID = 13562;
+    private final int MIN_ROUND = 214;
+    private final int MAX_ROUND = 217;
     private final int ATTACK_CONSIDERATION_DISTANCE = 3;
 
     private final int CIRCLING_GRANULARITY = 8;
@@ -51,11 +51,10 @@ abstract public class Robot {
             try {
                 initRoundState();
                 doTurn();
-
-                Clock.yield();
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            Clock.yield();
         }
     }
 
@@ -69,7 +68,7 @@ abstract public class Robot {
 
     protected void initRoundState() throws GameActionException {
         hasMoved = false;
-        hasAttacked = false;
+        hasAttacked = false; // also used for chops and strikes
         hasShakenTree = false;
         location = rc.getLocation();
         nearbyBullets = rc.senseNearbyBullets();
@@ -368,13 +367,41 @@ abstract public class Robot {
         if (rc.canFirePentadShot()) {
             rc.firePentadShot(dir);
             hasAttacked = true;
+            addSingleBulletToNearby(dir);
         } else if (rc.canFireTriadShot()) {
             rc.fireTriadShot(dir);
             hasAttacked = true;
+            addTriadBulletToNearby(dir);
         } else if (rc.canFireSingleShot()) {
             rc.fireSingleShot(dir);
             hasAttacked = true;
+            addPentadBulletToNearby(dir);
         }
+    }
+
+    private void addSingleBulletToNearby(Direction dir) {
+        nearbyBullets = Arrays.copyOf(nearbyBullets, nearbyBullets.length + 1);
+        nearbyBullets[nearbyBullets.length - 1] = newBullet(dir);
+    }
+
+    private void addTriadBulletToNearby(Direction dir) {
+        nearbyBullets = Arrays.copyOf(nearbyBullets, nearbyBullets.length + 3);
+        nearbyBullets[nearbyBullets.length - 1] = newBullet(dir);
+        nearbyBullets[nearbyBullets.length - 2] = newBullet(dir.rotateRightDegrees(20));
+        nearbyBullets[nearbyBullets.length - 3] = newBullet(dir.rotateLeftDegrees(20));
+    }
+
+    private void addPentadBulletToNearby(Direction dir) {
+        nearbyBullets = Arrays.copyOf(nearbyBullets, nearbyBullets.length + 5);
+        nearbyBullets[nearbyBullets.length - 1] = newBullet(dir);
+        nearbyBullets[nearbyBullets.length - 2] = newBullet(dir.rotateRightDegrees(15));
+        nearbyBullets[nearbyBullets.length - 3] = newBullet(dir.rotateLeftDegrees(15));
+        nearbyBullets[nearbyBullets.length - 4] = newBullet(dir.rotateRightDegrees(30));
+        nearbyBullets[nearbyBullets.length - 5] = newBullet(dir.rotateLeftDegrees(30));
+    }
+
+    private BulletInfo newBullet(Direction dir) {
+        return new BulletInfo(-1, location.add(dir, myType.bodyRadius), dir, myType.bulletSpeed, myType.attackPower);
     }
 
     protected boolean doCirclesOverlap(MapLocation locA, MapLocation locB, float radiusA, float radiusB) {
@@ -427,11 +454,7 @@ abstract public class Robot {
             if (locInChan == null || locInChan.roundNum < roundFilter) {
                 rc.broadcast(broadcastChannel, Coms.encodeLocation(loc, roundNum));
                 rc.setIndicatorDot(loc, 0,0,0);
-
-//                System.out.println("WRITE TO " + broadcastChannel + " " + loc.toString());
                 return ++broadcastChannel;
-            } else {
-//                System.out.println("DIDNT WRITE TO " + broadcastChannel + " " + loc.toString());
             }
 
             broadcastChannel++;
@@ -456,9 +479,7 @@ abstract public class Robot {
         float nextDist;
         while (true) {
             locInChan = Coms.decodeLocation(rc.readBroadcast(broadcastChannel));
-//            System.out.println("READ FROM " + broadcastChannel + " " + (locInChan == null));
             if (locInChan == null || locInChan.roundNum < roundFilter) return closestLoc;
-//            System.out.println("READ " + locInChan.location.toString());
             nextDist = location.distanceSquaredTo(locInChan.location);
             if (nextDist < minDist) {
                 minDist = nextDist;
@@ -487,4 +508,6 @@ abstract public class Robot {
     protected float sqrFloat(float a) {
         return a * a;
     }
+
+
 }

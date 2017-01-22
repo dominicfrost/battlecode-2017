@@ -70,15 +70,15 @@ public class Lumberjack extends Robot {
     }
 
     private void moveToNearest(MapLocation newGoal) throws GameActionException {
-//        if (bugger.goal() == null || bugger.goal().equals(newGoal)) {
-//            bugger.setGoal(location, newGoal, 0);
-//        }
-//
-//        Direction next = bugger.nextStride(location, nearbyTrees);
-//        if (next == null) {
-//            next = randomDirection();
-//        }
-        Direction next = location.directionTo(newGoal);
+        if (bugger.goal() == null || bugger.goal().equals(newGoal)) {
+            bugger.setGoal(location, newGoal, 0);
+        }
+
+        Direction next = bugger.nextStride(location, nearbyTrees);
+        if (next == null) {
+            next = randomDirection();
+        }
+//        Direction next = location.directionTo(newGoal);
         randomSafeMove(next);
     }
 

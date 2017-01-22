@@ -97,15 +97,15 @@ public class Gardener extends Robot {
         switch(socialClass) {
             case LOWER:
                 if (numBullets < 200) return;
-                spawnUnitsWithThresholds(30, 60, 100, 0);
+                spawnUnitsWithThresholds(0, 100, 100, 0);
                 break;
             case MIDDLE:
                 if (numBullets < 300) return;
-                spawnUnitsWithThresholds(10, 20, 100, 0);
+                spawnUnitsWithThresholds(0, 0, 0, 0);
                 break;
             case UPPER:
                 if (numBullets < 500) return;
-                spawnUnitsWithThresholds(10, 20, 50, 100);
+                spawnUnitsWithThresholds(0, 0, 0, 0);
                 break;
         }
     }
@@ -194,9 +194,9 @@ public class Gardener extends Robot {
             return;
         }
 
-        if (!bugger.hasGoal() || !bugger.goal().equals(gardenLocation)) bugger.setGoal(location, gardenLocation, 0);
-        Direction toGarden = bugger.nextStride(location, nearbyTrees);
-//        Direction toGarden = location.directionTo(gardenLocation);
+//        if (!bugger.hasGoal() || !bugger.goal().equals(gardenLocation)) bugger.setGoal(location, gardenLocation, 0);
+//        Direction toGarden = bugger.nextStride(location, nearbyTrees);
+        Direction toGarden = location.directionTo(gardenLocation);
         if (toGarden != null && rc.canMove(toGarden)) move(toGarden);
     }
 

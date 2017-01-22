@@ -4,7 +4,7 @@ import battlecode.common.*;
 import java.util.Arrays;
 import java.util.HashMap;
 
-public class Scout extends Robot {
+public class Scout extends Circle {
     private TreeInfo[] neutralTrees;
     private RobotInfo harassee;
     private HashMap<Integer, Boolean> shakenTrees;
@@ -48,6 +48,7 @@ public class Scout extends Robot {
     }
 
     protected void doTurn() throws GameActionException {
+        debug("DO TURN " + location.toString());
         determineAreasOfInterest();
         attackIfWayClose();
         tryShakeTrees();
@@ -113,20 +114,8 @@ public class Scout extends Robot {
             return;
         }
 
-        MapLocation dest = findSpotAroundHarassee();
-        if (dest == null) {
-            randomSafeMove(location.directionTo(harassee.location));
-            return;
-        }
-
-        if (canAttackHarasee()) {
-            spray(location.directionTo(harassee.location));
-            return;
-        }
-
-        Direction toMove = location.directionTo(dest);
-        if (toMove == null) return;
-        randomSafeMove(toMove);
+        moveCirclingLocation(harassee.location, harassee.getRadius());
+        attackCircleGoal(harassee.location, harassee.getRadius());
     }
 
     private void setShaking() throws GameActionException {
