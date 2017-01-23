@@ -143,7 +143,12 @@ public class Scout extends Circle {
 
     private RobotInfo findHarasee() {
         for (RobotInfo ri : nearbyEnemies) {
-            if (ri.type.equals(RobotType.GARDENER) || ri.type.equals(RobotType.ARCHON)) {
+            if (ri.type.equals(RobotType.GARDENER)) {
+                return ri;
+            }
+        }
+        for (RobotInfo ri : nearbyEnemies) {
+            if (ri.type.equals(RobotType.ARCHON)) {
                 return ri;
             }
         }
