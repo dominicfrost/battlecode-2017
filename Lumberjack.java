@@ -133,10 +133,10 @@ public class Lumberjack extends Circle {
 
         int count = 0;
         for (RobotInfo e: nearbyEnemies) {
-            if (location.distanceSquaredTo(e.location) <= sqrFloat(2F + e.type.bodyRadius)) count++;
+            if (location.distanceSquaredTo(e.location) <= sqrFloat(2F)) count++;
         }
         for (RobotInfo a: nearbyAllies) {
-            if (location.distanceSquaredTo(a.location) <= sqrFloat(2F + a.type.bodyRadius)) count--;
+            if (location.distanceSquaredTo(a.location) <= sqrFloat(2F)) count--;
         }
         return count > 0;
     }

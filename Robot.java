@@ -212,9 +212,13 @@ abstract public class Robot {
             }
         }
 
-        // assume they will shoot us
+        // assume they will shoot us / strike us
         for (RobotInfo e : nearbyEnemies) {
-            if (location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + e.type.bodyRadius, 2) + .01F) {
+            if (e.type.equals(RobotType.LUMBERJACK)) {
+                if (location.distanceSquaredTo(e.location) <= sqrFloat(myType.bodyRadius + 2F) + .001F) {
+                    damage += e.type.attackPower;
+                }
+            } else if (location.distanceSquaredTo(e.location) <= sqrFloat(myType.bodyRadius + e.type.bodyRadius) + .001F) {
                 damage += e.type.attackPower;
             }
         }
