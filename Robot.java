@@ -78,8 +78,8 @@ abstract public class Robot {
         nearbyTrees = rc.senseNearbyTrees();
         bulletCount = rc.getTeamBullets();
         nextRoundBullets = advanceBullets(nearbyBullets);
-        if (bulletCount >= BULLETS_TO_WIN) {
-            rc.donate(BULLETS_TO_WIN);
+        if (bulletCount >= rc.getVictoryPointCost() * GameConstants.VICTORY_POINTS_TO_WIN) {
+            rc.donate(bulletCount);
         }
 
         if (rc.getRoundNum() == rc.getRoundLimit()) {
