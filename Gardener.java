@@ -7,7 +7,7 @@ enum SocialClass {
     UPPER
 }
 
-public class Gardener extends Robot {
+public class Gardener extends Bugger {
 
     // HOW RICH WE ARE !!!!!
     private final int MIDDLE_CLASS_THRESHOLD = 20;
@@ -19,7 +19,6 @@ public class Gardener extends Robot {
 
     private MapLocation gardenLocation;
 
-    private Bug bugger;
     private GardenerState state;
 
     private enum GardenerState {
@@ -40,7 +39,6 @@ public class Gardener extends Robot {
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
         setFindingGarden();
-        bugger = new Bug(rc);
         buildCount = 0;
     }
 
@@ -81,7 +79,15 @@ public class Gardener extends Robot {
     }
 
     private void spawnOrBuild() throws GameActionException {
-        if (buildCount % 2 == 0 && gardenLocation != null && gardenLocation.equals(location) && shouldPlantTree() && plantTree()) return;
+        if (buildCount == 0) {
+            trySpawn(RobotType.LUMBERJACK, randomSpawnDir(RobotType.LUMBERJACK));
+            return;
+        }
+        if (buildCount == 2) {
+            trySpawn(RobotType.SCOUT, randomSpawnDir(RobotType.SCOUT));
+            return;
+        }
+        if (buildCount % 2 == 1 && gardenLocation != null && gardenLocation.equals(location) && shouldPlantTree() && plantTree()) return;
         spawnUnits();
     }
 
@@ -89,11 +95,11 @@ public class Gardener extends Robot {
         switch(socialClass) {
             case LOWER:
                 if (numBullets < 200) return;
-                spawnUnitsWithThresholds(40, 80, 100, 0);
+                spawnUnitsWithThresholds(33, 66, 100, 0);
                 break;
             case MIDDLE:
                 if (numBullets < 300) return;
-                spawnUnitsWithThresholds(20, 40, 100, 0);
+                spawnUnitsWithThresholds(20, 30, 100, 0);
                 break;
             case UPPER:
                 if (numBullets < 500) return;
@@ -116,6 +122,7 @@ public class Gardener extends Robot {
     }
 
     private boolean trySpawn(RobotType type, Direction dir) throws GameActionException {
+        if (dir == null) return false;
         if (rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);
             buildCount++;
@@ -196,10 +203,7 @@ public class Gardener extends Robot {
             return;
         }
 
-//        if (!bugger.hasGoal() || !bugger.goal().equals(gardenLocation)) bugger.setGoal(location, gardenLocation, 0);
-//        Direction toGarden = bugger.nextStride(location, nearbyTrees);
-        Direction toGarden = location.directionTo(gardenLocation);
-        if (toGarden != null && rc.canMove(toGarden)) move(toGarden);
+        moveWithBugger(gardenLocation, 0);
     }
 
     private MapLocation findGarden() throws GameActionException {

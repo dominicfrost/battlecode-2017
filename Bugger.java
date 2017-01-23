@@ -36,6 +36,12 @@ abstract public class Bugger extends Robot {
         if (next != null) move(next);
     }
 
+    public Direction nextStride(MapLocation nextGoal, int newQuitThresh) throws GameActionException {
+        setGoal(nextGoal, newQuitThresh);
+        if (hasMoved) return null;
+        return bugNextMove();
+    }
+
     private void setGoal(MapLocation newGoal, int newQuitThresh) {
         if (goal == null || !goal.equals(newGoal)) {
             state = BugState.TO_GOAL;

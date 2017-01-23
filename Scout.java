@@ -180,24 +180,37 @@ public class Scout extends Circle {
 
     private void determineAreasOfInterest() throws GameActionException {
         if (nearbyEnemies.length > 3) {
+            MapLocation aoi = avgEnemyLoc();
             int currentRoundNum = rc.getRoundNum();
             // write to the first AOI channel that is stale ( > 100 rounds old)
             DecodedLocation loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_1));
             if (loc == null || currentRoundNum - loc.roundNum > 100) {
-                rc.broadcast(Coms.AREA_OF_INTEREST_1, Coms.encodeLocation(location, currentRoundNum));
+                rc.broadcast(Coms.AREA_OF_INTEREST_1, Coms.encodeLocation(aoi, currentRoundNum));
                 return;
             }
 
             loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_2));
             if (loc == null || currentRoundNum - loc.roundNum > 100) {
-                rc.broadcast(Coms.AREA_OF_INTEREST_2, Coms.encodeLocation(location, currentRoundNum));
+                rc.broadcast(Coms.AREA_OF_INTEREST_2, Coms.encodeLocation(aoi, currentRoundNum));
                 return;
             }
 
             loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_3));
             if (loc == null || currentRoundNum - loc.roundNum > 100) {
-                rc.broadcast(Coms.AREA_OF_INTEREST_3, Coms.encodeLocation(location, currentRoundNum));
+                rc.broadcast(Coms.AREA_OF_INTEREST_3, Coms.encodeLocation(aoi, currentRoundNum));
             }
         }
+    }
+
+    private MapLocation avgEnemyLoc() throws GameActionException {
+        float avgX = 0;
+        float avgY = 0;
+        int count = 0;
+        for (RobotInfo e: nearbyEnemies) {
+            avgX += e.location.x;
+            avgY += e.location.y;
+            count++;
+        }
+        return new MapLocation(avgX / count, avgY / count);
     }
 }

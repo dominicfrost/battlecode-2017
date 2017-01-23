@@ -1,9 +1,8 @@
 package battlecode2017;
 import battlecode.common.*;
 
-public class Soldier extends Robot {
+public class Soldier extends Bugger {
     MapLocation destination;
-    Bug destinationBugger;
 
     Soldier(RobotController _rc) {
         super(_rc);
@@ -11,27 +10,14 @@ public class Soldier extends Robot {
 
 
     protected void doTurn() throws GameActionException {
-        if (!tryDodge()) {
-
-            if (destination == null) {
-                destination = acquireDestination();
-                destinationBugger = new Bug(rc);
-                destinationBugger.setGoal(location, destination, 5);
-            }
-
-            Direction moveDir;
-            if (destination != null) {
-                moveDir = destinationBugger.nextStride(location, nearbyTrees);
-            } else {
-                moveDir = randomDirection();
-            }
-
-            if (moveDir == null) {
-                moveDir = location.directionTo(destination);
-            }
-
-            if (attackAndFleeIfWayClose()) return;
-            tryMove(moveDir);
+        tryDodge();
+        if (destination == null) {
+            destination = acquireDestination();
+        }
+        if (destination != null) {
+            moveWithBugger(destination, 5);
+        } else {
+            stayAwayFromAllies();
         }
         if (attackIfWayClose()) return;
         pieCountAttack();

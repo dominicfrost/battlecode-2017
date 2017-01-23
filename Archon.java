@@ -51,7 +51,6 @@ public class Archon extends Robot {
 
     private boolean shouldHireGardener() {
         if (!rc.hasRobotBuildRequirements(RobotType.GARDENER)) return false;
-        if (rc.getRoundNum() < 200) return true;
         return (rc.getRoundNum() + ROUNDS_PER_GARDENER) / buildCount >= ROUNDS_PER_GARDENER;
     }
 
