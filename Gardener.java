@@ -95,6 +95,7 @@ public class Gardener extends Bugger {
         switch(socialClass) {
             case LOWER:
                 if (numBullets < 200) return;
+                // scout, lumberjack, soldier, tank
                 spawnUnitsWithThresholds(33, 66, 100, 0);
                 break;
             case MIDDLE:
