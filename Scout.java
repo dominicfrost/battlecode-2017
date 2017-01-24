@@ -33,18 +33,10 @@ public class Scout extends Circle {
     protected void initRoundState() throws GameActionException {
         super.initRoundState();
         setNeutralTrees();
-        sortEnemies();
     }
 
     private void setNeutralTrees() {
         neutralTrees = Arrays.stream(nearbyTrees).filter(t -> t.team.equals(Team.NEUTRAL) && t.containedBullets > 0 && shakenTrees.get(t.getID()) == null).toArray(TreeInfo[]::new);
-        TreeComparator comp = new TreeComparator(location);
-        Arrays.sort(neutralTrees, comp);
-    }
-
-    private void sortEnemies() {
-        BotComparator comp = new BotComparator(location);
-        Arrays.sort(nearbyEnemies, comp);
     }
 
     protected void doTurn() throws GameActionException {
@@ -138,21 +130,47 @@ public class Scout extends Circle {
         }
 
         rc.setIndicatorLine(location, neutralTrees[0].location, 0, 255,0);
-        randomSafeMove(location.directionTo(neutralTrees[0].location));
+        TreeInfo closestNeutralTree = getClosestNeutralTree();
+        randomSafeMove(location.directionTo(closestNeutralTree.location));
+    }
+
+    private TreeInfo getClosestNeutralTree() {
+        float minDist = Float.MAX_VALUE;
+        TreeInfo closest = null;
+        float nextDist;
+
+        for (TreeInfo ti : neutralTrees) {
+            nextDist = location.distanceSquaredTo(ti.location);
+            if (nextDist < minDist) {
+                minDist = nextDist;
+                closest = ti;
+            }
+        }
+
+        return closest;
     }
 
     private RobotInfo findHarasee() {
+        RobotInfo next = getClosestBotOfType(RobotType.GARDENER);
+        if (next != null) return next;
+        return getClosestBotOfType(RobotType.ARCHON);
+    }
+
+    private RobotInfo getClosestBotOfType(RobotType robotType) {
+        float minDist = Float.MAX_VALUE;
+        RobotInfo closest = null;
+        float nextDist;
+
         for (RobotInfo ri : nearbyEnemies) {
-            if (ri.type.equals(RobotType.GARDENER)) {
-                return ri;
+            if (!ri.type.equals(robotType)) continue;
+            nextDist = location.distanceSquaredTo(ri.location);
+            if (nextDist < minDist) {
+                minDist = nextDist;
+                closest = ri;
             }
         }
-        for (RobotInfo ri : nearbyEnemies) {
-            if (ri.type.equals(RobotType.ARCHON)) {
-                return ri;
-            }
-        }
-        return null;
+
+        return closest;
     }
 
     @Override

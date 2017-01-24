@@ -6,14 +6,12 @@ import battlecode.common.*;
 abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .1F;
-    private final int BULLETS_TO_WIN = 10000;
     private final int ROBOT_ID = 10676;
     private final int MIN_ROUND = 280;
     private final int MAX_ROUND = 288;
 
     private final int TRY_MOVE_DEGREE_OFFSET = 10;
     private final int RANDOM_MOVE_GRANULARITY = 60;
-
     protected RobotController rc;
     protected Random rand;
     protected Team myTeam;
