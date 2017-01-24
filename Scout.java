@@ -7,7 +7,6 @@ import java.util.HashMap;
 public class Scout extends Circle {
     private TreeInfo[] neutralTrees;
     private RobotInfo harassee;
-    private HashMap<Integer, Boolean> shakenTrees;
     private ScoutState state;
     private Direction scoutingDirection;
 
@@ -25,7 +24,6 @@ public class Scout extends Circle {
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
         setScouting();
-        shakenTrees = new HashMap<>();
         scoutingDirection = rc.getLocation().directionTo(enemyArchonLocs[rc.getID() % enemyArchonLocs.length]);
     }
 
@@ -36,7 +34,7 @@ public class Scout extends Circle {
     }
 
     private void setNeutralTrees() {
-        neutralTrees = Arrays.stream(nearbyTrees).filter(t -> t.team.equals(Team.NEUTRAL) && t.containedBullets > 0 && shakenTrees.get(t.getID()) == null).toArray(TreeInfo[]::new);
+        neutralTrees = Arrays.stream(nearbyTrees).filter(t -> t.containedBullets > 0).toArray(TreeInfo[]::new);
     }
 
     protected void doTurn() throws GameActionException {
@@ -189,7 +187,6 @@ public class Scout extends Circle {
     @Override
     protected boolean tryShakeTree(TreeInfo ti) throws GameActionException {
         if (super.tryShakeTree(ti)) {
-            shakenTrees.put(ti.getID(), true);
             return true;
         }
 
