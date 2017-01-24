@@ -100,11 +100,11 @@ public class Gardener extends Bugger {
                 break;
             case MIDDLE:
                 if (numBullets < 300) return;
-                spawnUnitsWithThresholds(20, 30, 100, 0);
+                spawnUnitsWithThresholds(20, 30, 75, 100);
                 break;
             case UPPER:
                 if (numBullets < 500) return;
-                spawnUnitsWithThresholds(10, 20, 100, 0);
+                spawnUnitsWithThresholds(10, 10, 20, 100);
                 break;
         }
     }
