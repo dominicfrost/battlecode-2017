@@ -84,7 +84,6 @@ abstract public class Circle extends Bugger {
 
             count++;
         }
-        debug("valid is " + (valid==null));
 
         if (valid != null)
             tryMove(location.directionTo(valid));
