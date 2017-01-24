@@ -250,6 +250,10 @@ abstract public class Robot {
         if (myType.equals(RobotType.LUMBERJACK)) return false;
         for (RobotInfo e : nearbyEnemies) {
             if (e.type == RobotType.ARCHON || e.type == RobotType.GARDENER) continue;
+            float bodyRad = e.type.bodyRadius;
+            if (e.getType() == RobotType.LUMBERJACK){
+                bodyRad = 2.0f;
+            }
             if (location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + e.type.bodyRadius, 2) + .01F) {
                 return true;
             }
@@ -315,17 +319,17 @@ abstract public class Robot {
         return false;
     }
 
-    protected boolean attackAndFleeIfWayClose() throws GameActionException {
-        if (hasAttacked) return false;
-        for (RobotInfo b : nearbyEnemies) {
-            if (location.distanceSquaredTo(b.location) <= Math.pow(b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE, 2)) {
-                spray(location.directionTo(b.location));
-                tryMove(location.directionTo(b.location).opposite());
-                return true;
-            }
-        }
-        return false;
-    }
+//    protected boolean attackAndFleeIfWayClose() throws GameActionException {
+//        if (hasAttacked) return false;
+//        for (RobotInfo b : nearbyEnemies) {
+//            if (location.distanceSquaredTo(b.location) <= Math.pow(b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE, 2)) {
+//                spray(location.directionTo(b.location));
+//                tryMove(location.directionTo(b.location).opposite());
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
 
     protected boolean pieCountAttack() throws GameActionException {
         if (hasAttacked) return false;
@@ -344,10 +348,14 @@ abstract public class Robot {
             counts[countIndex]++;
         }
         for (RobotInfo ri : nearbyAllies) {
+            int multiplier = 1;
+            if (ri.getType() == RobotType.TANK){
+                multiplier = 4;
+            }
             next = location.directionTo(ri.location);
             degrees = (next.getAngleDegrees() + 360) % 360;
             countIndex = (int) degrees / pieceDegrees;
-            counts[countIndex]--;
+            counts[countIndex]-= 1 * multiplier;
         }
 //        for (TreeInfo ri : nearbyTrees) {
 //            if (!ri.team.equals(enemyTeam)) continue;
@@ -579,5 +587,42 @@ abstract public class Robot {
                 return;
             }
         }
+    }
+
+    protected MapLocation acquireDestination() throws GameActionException {
+        int currentRound = rc.getRoundNum();
+
+        // look for an AOI
+        DecodedLocation dl = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_1));
+        if (dl != null && dl.roundNum - currentRound < 100) {
+            return dl.location;
+        }
+
+        dl = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_2));
+        if (dl != null && dl.roundNum - currentRound < 100) {
+            return dl.location;
+        }
+
+        dl = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_3));
+        if (dl != null && dl.roundNum - currentRound < 100) {
+            return dl.location;
+        }
+
+        return null;
+    }
+
+    protected boolean atDestination(MapLocation l) throws GameActionException {
+        return rc.canSenseLocation(l) && rc.getLocation().distanceSquaredTo(l) < 16;
+    }
+
+    protected MapLocation getDestination(MapLocation destination) throws GameActionException {
+        if (destination == null || atDestination(location)) {
+            if (nearbyEnemies.length > 0) {
+                destination = nearbyEnemies[0].getLocation();
+            } else {
+                destination = acquireDestination();
+            }
+        }
+        return destination;
     }
 }
