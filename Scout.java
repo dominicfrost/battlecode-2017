@@ -140,6 +140,7 @@ public class Scout extends Circle {
         float nextDist;
 
         for (TreeInfo ti : neutralTrees) {
+
             nextDist = location.distanceSquaredTo(ti.location);
             if (nextDist < minDist) {
                 minDist = nextDist;

@@ -38,6 +38,12 @@ abstract public class Circle extends Bugger {
         return location.distanceSquaredTo(goal) <= (distanceToCenterSquared + .001F);
     }
 
+    protected boolean atButNotOnCircleGoal(MapLocation goal, float goalRadius) {
+        float distanceToCenterSquared = sqrFloat(goalRadius + myType.bodyRadius);
+        debug("distanceToCenterSquared " + distanceToCenterSquared + " location.distanceSquaredTo(goal) " + location.distanceSquaredTo(goal)) ;
+        return location.distanceSquaredTo(goal) <= (distanceToCenterSquared + .001F) && location.distanceSquaredTo(goal) >= (distanceToCenterSquared - .001F);
+    }
+
     protected void moveInOnGoal(MapLocation goal, float goalRadius) throws GameActionException {
         Direction fromGoal = goal.directionTo(location);
         Direction right, left;
