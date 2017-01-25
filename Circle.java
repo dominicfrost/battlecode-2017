@@ -18,7 +18,21 @@ abstract public class Circle extends Bugger {
         // If i'm not close enough
         debug("moveCirclingLocation " + location.distanceSquaredTo(goal) + "  "+ sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius));
         if (location.distanceSquaredTo(goal) > sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius)) {
-            debug("MOVEWITHBUGG");
+            moveWithBugger(goal, 0);
+            return;
+        }
+
+        moveInOnGoal(goal, goalRadius);
+    }
+
+    protected void moveCirclingLocationWhileStayingOutOfGoal(MapLocation goal, float goalRadius) throws GameActionException {
+        if (hasMoved) return;
+        if (atButNotOnCircleGoal(goal, goalRadius)) return;
+
+        // If i'm not close enough
+        debug("moveCirclingLocation " + location.distanceSquaredTo(goal) + "  "+ sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius));
+        float distToGoal = location.distanceSquaredTo(goal);
+        if (location.distanceSquaredTo(goal) > sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius)) {
             moveWithBugger(goal, 0);
             return;
         }
@@ -34,8 +48,12 @@ abstract public class Circle extends Bugger {
 
     protected boolean atCircleGoal(MapLocation goal, float goalRadius) {
         float distanceToCenterSquared = sqrFloat(goalRadius + myType.bodyRadius);
-        debug("distanceToCenterSquared " + distanceToCenterSquared + " location.distanceSquaredTo(goal) " + location.distanceSquaredTo(goal)) ;
         return location.distanceSquaredTo(goal) <= (distanceToCenterSquared + .001F);
+    }
+
+    protected boolean atButNotOnCircleGoal(MapLocation goal, float goalRadius) {
+        float distanceToCenterSquared = sqrFloat(goalRadius + myType.bodyRadius);
+        return location.distanceSquaredTo(goal) <= (distanceToCenterSquared + .001F) && location.distanceSquaredTo(goal) >= (distanceToCenterSquared - .001F);
     }
 
     protected void moveInOnGoal(MapLocation goal, float goalRadius) throws GameActionException {
@@ -78,7 +96,6 @@ abstract public class Circle extends Bugger {
 
             count++;
         }
-        debug("valid is " + (valid==null));
 
         if (valid != null)
             tryMove(location.directionTo(valid));

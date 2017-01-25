@@ -6,9 +6,14 @@ import battlecode.common.*;
 abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .1F;
-    private final int ROBOT_ID = 11089;
+
+    private final int ROBOT_ID = 10424;
     private final int MIN_ROUND = 0;
     private final int MAX_ROUND = 0;
+
+    protected final float radian = 0.0174533F;
+    protected final float pi = (float) Math.PI;
+    protected final float roothalf = .70710678118F;
 
     private final int TRY_MOVE_DEGREE_OFFSET = 10;
     private final int RANDOM_MOVE_GRANULARITY = 60;
