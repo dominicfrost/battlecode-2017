@@ -3,7 +3,6 @@ package battlecode2017;
 import battlecode.common.*;
 
 public class Tank extends Robot {
-    private MapLocation destination = null;
 
     Tank(RobotController _rc) {
         super(_rc);
@@ -11,9 +10,8 @@ public class Tank extends Robot {
 
     protected void doTurn() throws GameActionException {
         tryDodge();
-        destination = getDestination(destination);
+        destination = getDestination();
 
-        Direction moveDir;
         if (destination != null) {
             tryMove(location.directionTo(destination));
         } else {

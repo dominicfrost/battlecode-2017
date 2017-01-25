@@ -29,6 +29,7 @@ abstract public class Robot {
     protected boolean hasShakenTree;
 
     protected MapLocation location;
+    protected MapLocation destination;
     protected BulletInfo[] nearbyBullets;
     protected BulletInfo[] nextRoundBullets;
     protected RobotInfo[] nearbyBots;
@@ -258,7 +259,7 @@ abstract public class Robot {
             if (e.getType() == RobotType.LUMBERJACK){
                 bodyRad = 2.0f;
             }
-            if (location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + e.type.bodyRadius, 2) + .01F) {
+            if (location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + bodyRad, 2) + .01F) {
                 return true;
             }
         }
@@ -337,7 +338,7 @@ abstract public class Robot {
 
     protected boolean pieCountAttack() throws GameActionException {
         if (hasAttacked) return false;
-        int numPieces = 12;
+        int numPieces = 6;
         int pieceDegrees = 360 / numPieces;
 
         int[] counts = new int[numPieces];
@@ -352,14 +353,14 @@ abstract public class Robot {
             counts[countIndex]++;
         }
         for (RobotInfo ri : nearbyAllies) {
-            int multiplier = 1;
+            int multiplier = 2;
             if (ri.getType() == RobotType.TANK){
                 multiplier = 4;
             }
             next = location.directionTo(ri.location);
             degrees = (next.getAngleDegrees() + 360) % 360;
             countIndex = (int) degrees / pieceDegrees;
-            counts[countIndex]-= 1 * multiplier;
+            counts[countIndex]-= multiplier;
         }
 //        for (TreeInfo ri : nearbyTrees) {
 //            if (!ri.team.equals(enemyTeam)) continue;
@@ -619,7 +620,7 @@ abstract public class Robot {
         return rc.canSenseLocation(l) && rc.getLocation().distanceSquaredTo(l) < 16;
     }
 
-    protected MapLocation getDestination(MapLocation destination) throws GameActionException {
+    protected MapLocation getDestination() throws GameActionException {
         if (destination == null || atDestination(location)) {
             if (nearbyEnemies.length > 0) {
                 destination = nearbyEnemies[0].getLocation();
