@@ -1,6 +1,6 @@
 package battlecode2017;
 import battlecode.common.*;
-
+import davebot.*;
 
 
 public class SparseGardener extends Circle {
@@ -16,6 +16,7 @@ public class SparseGardener extends Circle {
     private MapLocation gardenLocation;
     private MapLocation buildingLocation;
     private RobotType buildingType;
+    private Direction scoutingDirection;
 
     private GardenerState state;
 
@@ -61,6 +62,14 @@ public class SparseGardener extends Circle {
         hasWatered = false;
     }
 
+    private void setState(GardenerState newState) {
+        buildingLocation = null;
+        buildingType = null;
+        gardenLocation = null;
+        scoutingDirection = null;
+        state = newState;
+    }
+
     protected void doTurn() throws GameActionException {
         postPeskyTrees();
         postPeskyAttackers();
@@ -81,14 +90,14 @@ public class SparseGardener extends Circle {
     private RobotType getBuildType() {
         switch(socialClass) {
             case LOWER:
-                if (numBullets < 200) return null;
-                return spawnUnitsWithThresholds(33, 66, 100, 0);
+                if (numBullets < 300) return null;
+                return spawnUnitsWithThresholds(0, 0, 0, 100);
             case MIDDLE:
                 if (numBullets < 300) return null;
-                return spawnUnitsWithThresholds(20, 30, 100, 0);
+                return spawnUnitsWithThresholds(0, 0, 0, 100);
             default: // UPPER
                 if (numBullets < 500) return null;
-                return spawnUnitsWithThresholds(10, 20, 100, 0);
+                return spawnUnitsWithThresholds(0, 0, 0, 100);
         }
     }
 
@@ -113,10 +122,7 @@ public class SparseGardener extends Circle {
      */
 
     private void setFindingPlantSpot() throws GameActionException {
-        buildingLocation = null;
-        buildingType = null;
-        gardenLocation = null;
-        state = GardenerState.FINDING_PLANT_SPOT;
+        setState(GardenerState.FINDING_PLANT_SPOT);
     }
 
     private void findingPlantSpot() throws GameActionException {
@@ -145,14 +151,11 @@ public class SparseGardener extends Circle {
         rc.setIndicatorDot(gardenLocation, 0,0,0);
         moveCirclingLocationWhileStayingOutOfGoal(gardenLocation, GameConstants.BULLET_TREE_RADIUS);
         if (atButNotOnCircleGoal(gardenLocation, GameConstants.BULLET_TREE_RADIUS) && isBuildReady && rc.hasTreeBuildRequirements()) {
-            debug("plantTree loc " + gardenLocation + " " + location.add(location.directionTo(gardenLocation), 1F) );
             plantTree(location.directionTo(gardenLocation));
         }
     }
 
     private void invalidateGardenLocationIfOccupied() throws GameActionException {
-        if (rc.canSenseAllOfCircle(gardenLocation, GameConstants.BULLET_TREE_RADIUS))
-            debug("isCircleOccupiedExceptByThisRobot" + gardenLocation + " " +  rc.isCircleOccupiedExceptByThisRobot(gardenLocation, GameConstants.BULLET_TREE_RADIUS));
         if (rc.canSenseAllOfCircle(gardenLocation, GameConstants.BULLET_TREE_RADIUS) &&
                 rc.isCircleOccupiedExceptByThisRobot(gardenLocation, GameConstants.BULLET_TREE_RADIUS)) {
             gardenLocation = null;
@@ -221,10 +224,7 @@ public class SparseGardener extends Circle {
      *
      */
     private void setFindingSpawnSpot() {
-        buildingLocation = null;
-        buildingType = null;
-        gardenLocation = null;
-        state = GardenerState.WATERING;
+        setState(GardenerState.FINDING_SPAWN_SPOT);
     }
 
     private void findingSpawnSpot() throws GameActionException {
@@ -250,13 +250,14 @@ public class SparseGardener extends Circle {
         else invalidateBuildLocationIfOccupied();
 
         if (buildingLocation == null) {
-            stayAwayFromAllieGardenerAndArchons();
+            if (!hasMoved) stayAwayFromAllieGardenerAndArchons();
             return;
         }
         rc.setIndicatorDot(buildingLocation, 0,55,233);
-        moveCirclingLocationWhileStayingOutOfGoal(buildingLocation, GameConstants.BULLET_TREE_RADIUS);
-        if (atButNotOnCircleGoal(buildingLocation, GameConstants.BULLET_TREE_RADIUS) && isBuildReady && rc.hasRobotBuildRequirements(buildingType)) {
+        moveCirclingLocationWhileStayingOutOfGoal(buildingLocation, buildingType.bodyRadius);
+        if (atButNotOnCircleGoal(buildingLocation, buildingType.bodyRadius) && isBuildReady && rc.hasRobotBuildRequirements(buildingType)) {
             build(buildingType, location.directionTo(buildingLocation));
+            setWatering();
         }
     }
 
@@ -313,10 +314,19 @@ public class SparseGardener extends Circle {
         return null;
     }
 
-    private MapLocation findBuildSpotForTank() {
+    private MapLocation findBuildSpotForTank() throws GameActionException {
+        Direction toSpawn = randomSpawnDir(RobotType.TANK);
+        if (toSpawn != null) return location.add(toSpawn, myType.bodyRadius + RobotType.TANK.bodyRadius);
+
+        if (scoutingDirection == null)
+            scoutingDirection = randomDirection();
+
+        if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
+            scoutingDirection = randomDirection();
+        }
+        randomSafeMove(scoutingDirection);
         return null;
     }
-
 
 
     private boolean shouldBuildBot() {
@@ -330,10 +340,7 @@ public class SparseGardener extends Circle {
      */
 
     private void setWatering() {
-        buildingLocation = null;
-        buildingType = null;
-        gardenLocation = null;
-        state = GardenerState.WATERING;
+        setState(GardenerState.WATERING);
     }
 
     private void watering() throws GameActionException {

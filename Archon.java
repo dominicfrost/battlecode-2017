@@ -23,7 +23,7 @@ public class Archon extends Robot {
         postPeskyAttackers();
         trySpawnGardener();
         if (tryDodge()) return; // think about immediate health
-        moveToSafestLocation(); // think about long term health
+//        moveToSafestLocation(); // think about long term health
     }
 
     private void moveToSafestLocation() throws GameActionException {
