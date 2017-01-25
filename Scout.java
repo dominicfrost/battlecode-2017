@@ -6,6 +6,7 @@ import java.util.HashMap;
 
 public class Scout extends Circle {
     private TreeInfo[] neutralTrees;
+    private TreeInfo[] bulletTrees;
     private RobotInfo harassee;
     private ScoutState state;
     private Direction scoutingDirection;
@@ -30,15 +31,14 @@ public class Scout extends Circle {
     @Override
     protected void initRoundState() throws GameActionException {
         super.initRoundState();
-        setNeutralTrees();
+        bulletTrees = Arrays.stream(nearbyTrees).filter(t -> t.containedBullets > 0).toArray(TreeInfo[]::new);
+        neutralTrees = Arrays.stream(nearbyTrees).filter(t -> t.getTeam() == Team.NEUTRAL).toArray(TreeInfo[]::new);
     }
 
-    private void setNeutralTrees() {
-        neutralTrees = Arrays.stream(nearbyTrees).filter(t -> t.containedBullets > 0).toArray(TreeInfo[]::new);
-    }
 
     protected void doTurn() throws GameActionException {
         determineAreasOfInterest();
+        updateTreeDensity();
         attackIfWayClose();
         tryShakeTrees();
         tryDodge();
@@ -74,7 +74,7 @@ public class Scout extends Circle {
 
         }
 
-        if (neutralTrees.length > 0) {
+        if (bulletTrees.length > 0) {
             setShaking();
             moveToShakableTree();
             return;
@@ -121,13 +121,13 @@ public class Scout extends Circle {
 
         }
 
-        if (neutralTrees.length == 0) {
+        if (bulletTrees.length == 0) {
             setScouting();
             scout();
             return;
         }
 
-        rc.setIndicatorLine(location, neutralTrees[0].location, 0, 255,0);
+        rc.setIndicatorLine(location, bulletTrees[0].location, 0, 255,0);
         TreeInfo closestNeutralTree = getClosestNeutralTree();
         randomSafeMove(location.directionTo(closestNeutralTree.location));
     }
@@ -137,7 +137,7 @@ public class Scout extends Circle {
         TreeInfo closest = null;
         float nextDist;
 
-        for (TreeInfo ti : neutralTrees) {
+        for (TreeInfo ti : bulletTrees) {
             nextDist = location.distanceSquaredTo(ti.location);
             if (nextDist < minDist) {
                 minDist = nextDist;
@@ -174,7 +174,7 @@ public class Scout extends Circle {
     @Override
     protected void tryShakeTrees() throws GameActionException {
         if (hasShakenTree) return;
-        for (TreeInfo ti: neutralTrees) {
+        for (TreeInfo ti: bulletTrees) {
             if (!closeEnoughToShake(ti)) return;
             if (tryShakeTree(ti)) return;
         }
@@ -213,6 +213,23 @@ public class Scout extends Circle {
             loc = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_3));
             if (loc == null || currentRoundNum - loc.roundNum > 100) {
                 rc.broadcast(Coms.AREA_OF_INTEREST_3, Coms.encodeLocation(aoi, currentRoundNum));
+            }
+        }
+    }
+
+    private void updateTreeDensity() throws GameActionException {
+        for (int i = nearbyAllies.length - 1; i >= 0; i--) {
+            // only broadcast this value if there is at least one gardener in range of the shout.
+            if (nearbyAllies[i].getType() == RobotType.GARDENER) {
+                DecodedDensity density = Coms.decodeTreeDensity(rc.readBroadcast(Coms.TREE_DENSITY));
+
+                if (density == null) {
+                    rc.broadcast(Coms.TREE_DENSITY, Coms.encodeTreeDensity(neutralTrees.length, 1));
+                    return;
+                }
+                int newRunningAvg = ((density.runningAvg * density.numSamples) + neutralTrees.length) / (density.numSamples + 1);
+                rc.broadcast(Coms.TREE_DENSITY, Coms.encodeTreeDensity(newRunningAvg , density.numSamples + 1));
+                return;
             }
         }
     }
