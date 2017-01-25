@@ -143,7 +143,7 @@ public class SparseGardener extends Circle {
             return;
         }
         rc.setIndicatorDot(gardenLocation, 0,0,0);
-        moveCirclingLocation(gardenLocation, GameConstants.BULLET_TREE_RADIUS);
+        moveCirclingLocationWhileStayingOutOfGoal(gardenLocation, GameConstants.BULLET_TREE_RADIUS);
         if (atButNotOnCircleGoal(gardenLocation, GameConstants.BULLET_TREE_RADIUS) && isBuildReady && rc.hasTreeBuildRequirements()) {
             debug("plantTree loc " + gardenLocation + " " + location.add(location.directionTo(gardenLocation), 1F) );
             plantTree(location.directionTo(gardenLocation));
@@ -212,7 +212,7 @@ public class SparseGardener extends Circle {
     }
 
     private boolean shouldPlantTree() {
-        return rc.getRoundNum() / (rc.getTreeCount() + 1) < 100 && rc.hasTreeBuildRequirements();
+        return rc.getRoundNum() / (rc.getTreeCount() + 1) > 100 && rc.hasTreeBuildRequirements();
     }
 
     /*
@@ -254,7 +254,7 @@ public class SparseGardener extends Circle {
             return;
         }
         rc.setIndicatorDot(buildingLocation, 0,55,233);
-        moveCirclingLocation(buildingLocation, GameConstants.BULLET_TREE_RADIUS);
+        moveCirclingLocationWhileStayingOutOfGoal(buildingLocation, GameConstants.BULLET_TREE_RADIUS);
         if (atButNotOnCircleGoal(buildingLocation, GameConstants.BULLET_TREE_RADIUS) && isBuildReady && rc.hasRobotBuildRequirements(buildingType)) {
             build(buildingType, location.directionTo(buildingLocation));
         }
@@ -305,7 +305,7 @@ public class SparseGardener extends Circle {
 
 
     private MapLocation checkDirectionForBuildSpot(RobotType rt, TreeInfo ti, Direction dir) throws GameActionException {
-        MapLocation spot = ti.location.add(dir, ti.radius + rt.bodyRadius + .05F);
+        MapLocation spot = ti.location.add(dir, ti.radius + 2.0F + .05F);
         rc.setIndicatorDot(spot, 155,255,0);
         if (rc.canSenseAllOfCircle(spot, rt.bodyRadius) &&
             rc.onTheMap(spot, rt.bodyRadius) &&

@@ -12,6 +12,7 @@ abstract public class Robot {
 
     protected final float radian = 0.0174533F;
     protected final float pi = (float) Math.PI;
+    protected final float roothalf = .70710678118F;
 
     private final int TRY_MOVE_DEGREE_OFFSET = 10;
     private final int RANDOM_MOVE_GRANULARITY = 60;
