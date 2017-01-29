@@ -9,6 +9,13 @@ public class Coms {
     public static final int AREA_OF_INTEREST_2 = 2;
     public static final int AREA_OF_INTEREST_3 = 3;
 
+
+    public static final int LUMBERJACK_COUNT = 10;
+    public static final int SOLDIER_COUNT = 11;
+    public static final int SCOUT_COUNT = 12;
+    public static final int TANK_COUNT = 13;
+    public static final int GARNDENER_COUNT = 14;
+
     public static final int PESKY_TREES = 500;
     public static final int PESKY_ATTACKERS = 1000;
 

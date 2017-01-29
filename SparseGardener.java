@@ -9,9 +9,17 @@ public class SparseGardener extends Circle {
     private final int MIDDLE_CLASS_THRESHOLD = 20;
     private final int UPPER_CLASS_THRESHOLD = 40;
 
-    private int buildCount;
     private boolean isBuildReady;
     private boolean hasWatered;
+
+    private int ljCount;
+    private int soldierCount;
+    private int tankCount;
+    private int scoutCount;
+    private int ljCountCache;
+    private int soldierCountCache;
+    private int tankCountCache;
+    private int scoutCountCache;
 
     private MapLocation gardenLocation;
     private MapLocation buildingLocation;
@@ -37,11 +45,19 @@ public class SparseGardener extends Circle {
     protected void initRobotState() throws GameActionException {
         super.initRobotState();
         setFindingPlantSpot();
-        buildCount = 0;
 
         gardenLocation = null;
         buildingLocation = null;
         buildingType = null;
+
+        ljCount = 0;
+        soldierCount = 0;
+        tankCount = 0;
+        scoutCount = 0;
+        ljCountCache = 0;
+        soldierCountCache = 0;
+        tankCountCache = 0;
+        scoutCountCache = 0;
     }
 
     @Override
@@ -60,6 +76,7 @@ public class SparseGardener extends Circle {
         numBullets = rc.getTeamBullets();
         isBuildReady = rc.isBuildReady();
         hasWatered = false;
+        updateBotCounts();
     }
 
     private void setState(GardenerState newState) {
@@ -70,10 +87,28 @@ public class SparseGardener extends Circle {
         state = newState;
     }
 
+    private void updateBotCounts() throws GameActionException {
+        int ljTotal = rc.readBroadcast(Coms.LUMBERJACK_COUNT);
+        int soldierTotal = rc.readBroadcast(Coms.SOLDIER_COUNT);
+        int scoutTotal = rc.readBroadcast(Coms.SCOUT_COUNT);
+        int tankTotal = rc.readBroadcast(Coms.TANK_COUNT);
+
+        ljCount = ljTotal - ljCountCache;
+        soldierCount = soldierTotal - soldierCountCache;
+        scoutCount = scoutTotal - scoutCountCache;
+        tankCount = tankTotal - tankCountCache;
+
+        ljCountCache = ljTotal;
+        soldierCountCache = soldierTotal;
+        scoutCountCache = scoutTotal;
+        tankCountCache = tankTotal;
+    }
+
     protected void doTurn() throws GameActionException {
         postPeskyTrees();
         postPeskyAttackers();
         waterTree();
+        debug(""+state);
         switch (state) {
             case FINDING_PLANT_SPOT:
                 findingPlantSpot();
@@ -88,29 +123,35 @@ public class SparseGardener extends Circle {
     }
 
     private RobotType getBuildType() {
+        int roundNum = rc.getRoundNum();
+        if (roundNum == 2) return RobotType.SCOUT;
+        if (roundNum <= 40) return RobotType.SOLDIER;
         switch(socialClass) {
             case LOWER:
-                if (numBullets < 300) return null;
-                return spawnUnitsWithThresholds(0, 0, 0, 100);
+                if (numBullets < 200) return null;
+                return spawnUnitsWithThresholds(25, 25, 50, 0);
             case MIDDLE:
                 if (numBullets < 300) return null;
-                return spawnUnitsWithThresholds(0, 0, 0, 100);
+                return spawnUnitsWithThresholds(15, 15, 50, 20);
             default: // UPPER
                 if (numBullets < 500) return null;
-                return spawnUnitsWithThresholds(0, 0, 0, 100);
+                return spawnUnitsWithThresholds(0, 0, 50, 50);
         }
     }
 
-    private RobotType spawnUnitsWithThresholds(float scoutThreshold, float lumberjackThreshold, float soldierThreshold, float tankThreshold) {
-        double r = Math.random() * 100;
-        if (r < scoutThreshold) {
+    private RobotType spawnUnitsWithThresholds(int scoutThreshold, int lumberjackThreshold, int soldierThreshold, int tankThreshold) {
+        int count = ljCount + scoutCount + soldierCount + tankCount;
+        if (count == 0) return RobotType.SOLDIER;
+        if ((float) scoutCount / count * 100 < scoutThreshold) {
             return RobotType.SCOUT;
-        } else if (r < lumberjackThreshold) {
+        } else if ((float) ljCount / count * 100 < lumberjackThreshold) {
             return RobotType.LUMBERJACK;
-        } else if (r < soldierThreshold) {
+        } else if ((float) soldierCount / count * 100 < soldierThreshold) {
             return RobotType.SOLDIER;
-        } else { // if (r < tankThreshold) {
+        } else if ((float) tankCount / count * 100 < tankThreshold) {
             return RobotType.TANK;
+        } else {
+            return RobotType.SOLDIER;
         }
     }
 
@@ -133,12 +174,12 @@ public class SparseGardener extends Circle {
             return;
         }
 
-        if (shouldBuildBot()) {
-            gardenLocation = null;
-            setFindingSpawnSpot();
-            findingSpawnSpot();
-            return;
-        }
+//        if (shouldBuildBot()) {
+//            gardenLocation = null;
+//            setFindingSpawnSpot();
+//            findingSpawnSpot();
+//            return;
+//        }
 
         if (gardenLocation == null )
             gardenLocation = findPlantSpot();
@@ -194,7 +235,7 @@ public class SparseGardener extends Circle {
     }
 
     private MapLocation checkDirectionForPlantSpot(TreeInfo ti, Direction dir) throws GameActionException {
-        MapLocation spot = ti.location.add(dir, ti.radius + 2.1F + GameConstants.BULLET_TREE_RADIUS);
+        MapLocation spot = ti.location.add(dir, ti.radius + 2.5F + GameConstants.BULLET_TREE_RADIUS);
         rc.setIndicatorDot(spot, 155,0,0);
         if (rc.canSenseAllOfCircle(spot, GameConstants.BULLET_TREE_RADIUS) &&
             rc.onTheMap(spot, GameConstants.BULLET_TREE_RADIUS) &&
@@ -215,7 +256,10 @@ public class SparseGardener extends Circle {
     }
 
     private boolean shouldPlantTree() {
-        return rc.getRoundNum() / (rc.getTreeCount() + 1) > 100 && rc.hasTreeBuildRequirements();
+        int roundNum = rc.getRoundNum();
+        if (!rc.hasTreeBuildRequirements()) return false;
+        if (roundNum < 40) return false;
+        return roundNum < 250 || (roundNum + 60) / (rc.getTreeCount() + 1) > 60;
     }
 
     /*
@@ -306,7 +350,7 @@ public class SparseGardener extends Circle {
 
 
     private MapLocation checkDirectionForBuildSpot(RobotType rt, TreeInfo ti, Direction dir) throws GameActionException {
-        MapLocation spot = ti.location.add(dir, ti.radius + 2.0F + .05F);
+        MapLocation spot = ti.location.add(dir, ti.radius + 2.25F);
         rc.setIndicatorDot(spot, 155,255,0);
         if (rc.canSenseAllOfCircle(spot, rt.bodyRadius) &&
             rc.onTheMap(spot, rt.bodyRadius) &&
@@ -318,13 +362,15 @@ public class SparseGardener extends Circle {
         Direction toSpawn = randomSpawnDir(RobotType.TANK);
         if (toSpawn != null) return location.add(toSpawn, myType.bodyRadius + RobotType.TANK.bodyRadius);
 
-        if (scoutingDirection == null)
-            scoutingDirection = randomDirection();
-
-        if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
-            scoutingDirection = randomDirection();
-        }
-        randomSafeMove(scoutingDirection);
+//        if (scoutingDirection == null)
+//            scoutingDirection = randomDirection();
+//        debug("A" +scoutingDirection);
+//        if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
+//            scoutingDirection = randomDirection();
+//            debug("B" + scoutingDirection);
+//        }
+//        randomSafeMove(scoutingDirection);
+        moveWithBugger(enemyArchonLocs[rc.getID() % enemyArchonLocs.length], 0);
         return null;
     }
 
@@ -395,8 +441,8 @@ public class SparseGardener extends Circle {
     private Direction randomSpawnDir(RobotType rt) {
         if (!rc.hasRobotBuildRequirements(rt)) return null;
         Direction nextDir;
-        for (int i = 0; i < 6; i++) {
-            nextDir = Direction.getNorth().rotateRightDegrees(i * 60);
+        for (int i = 0; i < 12; i++) {
+            nextDir = Direction.getNorth().rotateRightDegrees(i * 30);
             if (rc.canBuildRobot(rt, nextDir)) return nextDir;
         }
         return null;

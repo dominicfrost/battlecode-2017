@@ -13,6 +13,11 @@ public class Gardener extends Bugger {
     private final int MIDDLE_CLASS_THRESHOLD = 20;
     private final int UPPER_CLASS_THRESHOLD = 40;
 
+    private int ljCount;
+    private int soldierCount;
+    private int tankCount;
+    private int scoutCount;
+
     private final float GARDEN_SPACE = sqrFloat(GameConstants.BULLET_TREE_RADIUS * 4 + RobotType.GARDENER.bodyRadius) + .001F;
     private int buildCount;
     private boolean isBuildReady;
@@ -40,10 +45,15 @@ public class Gardener extends Bugger {
         super.initRobotState();
         setFindingGarden();
         buildCount = 0;
+        ljCount = 0;
+        soldierCount = 0;
+        tankCount = 0;
+        scoutCount = 0;
     }
 
     @Override
     protected void initRoundState() throws GameActionException {
+        updateBotCounts();
         super.initRoundState();
 
         int treeCount = rc.getTreeCount();
@@ -57,6 +67,13 @@ public class Gardener extends Bugger {
 
         numBullets = rc.getTeamBullets();
         isBuildReady = rc.isBuildReady();
+    }
+
+    private void updateBotCounts() throws GameActionException {
+        ljCount = rc.readBroadcast(Coms.LUMBERJACK_COUNT) - ljCount;
+        soldierCount = rc.readBroadcast(Coms.SOLDIER_COUNT) - soldierCount;
+        tankCount = rc.readBroadcast(Coms.TANK_COUNT) - tankCount;
+        scoutCount = rc.readBroadcast(Coms.SCOUT_COUNT) - scoutCount;
     }
 
     protected void doTurn() throws GameActionException {

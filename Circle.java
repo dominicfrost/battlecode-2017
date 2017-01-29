@@ -27,16 +27,24 @@ abstract public class Circle extends Bugger {
 
     protected void moveCirclingLocationWhileStayingOutOfGoal(MapLocation goal, float goalRadius) throws GameActionException {
         if (hasMoved) return;
+        debug("A");
         if (atButNotOnCircleGoal(goal, goalRadius)) return;
+        debug("B");
 
         // If i'm not close enough
         debug("moveCirclingLocation " + location.distanceSquaredTo(goal) + "  "+ sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius));
         float distToGoal = location.distanceSquaredTo(goal);
-        if (location.distanceSquaredTo(goal) > sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius)) {
+//        float
+        if (distToGoal > sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius)) {
+            debug("C" + hasMoved);
             moveWithBugger(goal, 0);
             return;
         }
 
+//        if (distToGoal < sqrFloat(myType.strideRadius + myType.bodyRadius)) {
+//
+//            return;
+//        }
         moveInOnGoal(goal, goalRadius);
     }
 

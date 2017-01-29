@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 abstract public class Bugger extends Robot {
     private final int ROTATION_GRANULARITY = 45;
-    private final int FOLLOW_WALL_GRANULARITY = 45 / 2;
+    private final int FOLLOW_WALL_GRANULARITY = 45;
 
     private int quitThresh;
     private MapLocation goal;
@@ -33,6 +33,7 @@ abstract public class Bugger extends Robot {
         setGoal(nextGoal, newQuitThresh);
         if (hasMoved) return;
         Direction next = bugNextMove();
+        debug(""+next);
         if (next != null) move(next);
     }
 

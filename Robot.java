@@ -6,16 +6,16 @@ import battlecode.common.*;
 abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .1F;
-    private final int ROBOT_ID = 10424;
-    private final int MIN_ROUND = 532;
-    private final int MAX_ROUND = 535;
+    private final int ROBOT_ID = 10348;
+    private final int MIN_ROUND = 72;
+    private final int MAX_ROUND = 84;
+    private final float MAX_BULLET_SPEED = 4F;
 
     protected final float radian = 0.0174533F;
     protected final float pi = (float) Math.PI;
-    protected final float roothalf = .70710678118F;
 
     private final int TRY_MOVE_DEGREE_OFFSET = 10;
-    private final int RANDOM_MOVE_GRANULARITY = 60;
+    private final int RANDOM_MOVE_GRANULARITY = 45;
     protected RobotController rc;
     protected Random rand;
     protected Team myTeam;
@@ -74,7 +74,7 @@ abstract public class Robot {
         hasAttacked = false; // also used for chops and strikes
         hasShakenTree = false;
         location = rc.getLocation();
-        nearbyBullets = rc.senseNearbyBullets();
+        nearbyBullets = rc.senseNearbyBullets(MAX_BULLET_SPEED + myType.strideRadius + myType.bodyRadius);
         nearbyBots = rc.senseNearbyRobots();
         nearbyAllies = filterNearbyBots(myTeam);
         nearbyEnemies = filterNearbyBots(enemyTeam);
@@ -88,6 +88,32 @@ abstract public class Robot {
         if (rc.getRoundNum() == rc.getRoundLimit()) {
             rc.donate(rc.getTeamBullets());
         }
+
+        updateTypeCount();
+    }
+
+    private void updateTypeCount() throws GameActionException {
+        switch (myType) {
+            case GARDENER:
+                postCount(Coms.GARNDENER_COUNT);
+                break;
+            case LUMBERJACK:
+                postCount(Coms.LUMBERJACK_COUNT);
+                break;
+            case SCOUT:
+                postCount(Coms.SCOUT_COUNT);
+                break;
+            case SOLDIER:
+                postCount(Coms.SOLDIER_COUNT);
+                break;
+            case TANK:
+                postCount(Coms.TANK_COUNT);
+        }
+    }
+
+    private void postCount(int chan) throws GameActionException {
+        int count = rc.readBroadcast(chan) + 1;
+        rc.broadcast(chan, count);
     }
 
 
@@ -172,30 +198,30 @@ abstract public class Robot {
         float nextHealth;
         float minHealth = Float.MAX_VALUE;
         for (int i = 0; i <= 180; i += RANDOM_MOVE_GRANULARITY) {
-            next = startDir.rotateRightDegrees(i);
+            next = startDir.rotateRightDegrees(i * RANDOM_MOVE_GRANULARITY);
             if (rc.canMove(next)) {
-                nextHealth = damageAtLocation(location.add(next));
+                nextHealth = damageAtLocation(location.add(next, myType.strideRadius));
                 if (nextHealth < minHealth) {
                     toMove = next;
                     minHealth = nextHealth;
+                    if (nextHealth == 0) break;
                 }
-                if (nextHealth == 0) break;
             }
 
             if (i == 180 || i == 0) continue;
-            next = startDir.rotateLeftDegrees(i);
+            next = startDir.rotateLeftDegrees(i * RANDOM_MOVE_GRANULARITY);
             if (rc.canMove(next)) {
-                nextHealth = damageAtLocation(location.add(next));
+                nextHealth = damageAtLocation(location.add(next, myType.strideRadius));
                 if (nextHealth < minHealth) {
                     toMove = next;
                     minHealth = nextHealth;
+                    if (nextHealth == 0) break;
                 }
-                if (nextHealth == 0) break;
             }
         }
 
         if (toMove != null && rc.canMove(toMove)) {
-            move(toMove);
+            move(toMove, myType.strideRadius);
             return true;
         }
         return false;
@@ -204,13 +230,13 @@ abstract public class Robot {
     protected float damageAtLocation(MapLocation loc) {
         float damage = 0F;
         for (BulletInfo b : nearbyBullets) {
-            if (willCollideLocation(b, loc)) {
+            if (pointInCircle(b.location, loc, myType.bodyRadius)) {
                 damage += b.damage;
             }
         }
 
         for (BulletInfo b : nextRoundBullets) {
-            if (willCollideLocation(b, loc)) {
+            if (pointInCircle(b.location, loc, myType.bodyRadius)) {
                 damage += b.damage;
             }
         }
@@ -218,14 +244,14 @@ abstract public class Robot {
         // assume they will shoot us / strike us
         for (RobotInfo e : nearbyEnemies) {
             if (e.type.equals(RobotType.LUMBERJACK)) {
-                if (location.distanceSquaredTo(e.location) <= sqrFloat(myType.bodyRadius + 2F) + .001F) {
+                if (loc.distanceTo(e.location) <= myType.bodyRadius + 2F + e.type.strideRadius) {
                     damage += e.type.attackPower;
                 }
-            } else if (location.distanceSquaredTo(e.location) <= sqrFloat(myType.bodyRadius + e.type.bodyRadius) + .001F) {
+            } else if (loc.distanceTo(e.location) <= myType.bodyRadius + e.type.bodyRadius + e.type.strideRadius) {
                 damage += e.type.attackPower;
             }
         }
-
+        debug("Damage at " + loc.toString() + " " + damage);
         return damage;
     }
 
@@ -248,7 +274,7 @@ abstract public class Robot {
     }
 
     protected boolean tryDodge() throws GameActionException {
-        return anyoneTooClose() && willAnyBulletsCollideWithMe() && randomSafeMove(randomDirection());
+        return damageAtLocation(location) > 0 && randomSafeMove(randomDirection());
     }
 
     private boolean anyoneTooClose() {
@@ -281,14 +307,13 @@ abstract public class Robot {
     }
 
     protected boolean willCollideLocation(BulletInfo bullet, MapLocation loc) {
-        // Get relevant bullet information
-        Direction propagationDirection = bullet.dir;
+        debug("    willCollideLocation start");
         MapLocation bulletLocation = bullet.location;
 
         // Calculate bullet relations to this robot
         Direction directionToRobot = bulletLocation.directionTo(loc);
         float distToRobot = bulletLocation.distanceTo(loc);
-        float theta = propagationDirection.radiansBetween(directionToRobot);
+        float theta = bullet.dir.radiansBetween(directionToRobot);
 
         // If theta > 90 degrees, then the bullet is traveling away from us and we can break early
         if (Math.abs(theta) > Math.PI / 2) {
@@ -301,7 +326,8 @@ abstract public class Robot {
         // line that is the path of the bullet.
         float perpendicularDist = (float) Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
 
-        return (perpendicularDist <= rc.getType().bodyRadius);
+        debug("    willCollideLocation end");
+        return (perpendicularDist <= myType.bodyRadius);
     }
 
 
@@ -433,7 +459,7 @@ abstract public class Robot {
     }
 
     protected boolean pointInCircle(MapLocation point, MapLocation center, float radius) {
-        return radius > Math.sqrt(center.distanceSquaredTo(point));
+        return radius > center.distanceTo(point);
     }
 
     protected boolean checkForGoodies(TreeInfo tree) throws GameActionException {
