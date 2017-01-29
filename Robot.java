@@ -315,6 +315,8 @@ abstract public class Robot {
 
         int[] counts = new int[numPieces];
 
+        RobotInfo[] closestBots = new RobotInfo[numPieces];
+
         Direction next;
         float degrees;
         int countIndex;
@@ -323,6 +325,9 @@ abstract public class Robot {
             degrees = (next.getAngleDegrees() + 360) % 360;
             countIndex = (int) degrees / pieceDegrees;
             counts[countIndex]++;
+            if (closestBots[countIndex] == null || closestBots[countIndex].location.distanceTo(location) > ri.location.distanceTo(location)) {
+                closestBots[countIndex] = ri;
+            }
         }
         for (RobotInfo ri : nearbyAllies) {
             int multiplier = 2;
@@ -352,9 +357,9 @@ abstract public class Robot {
         }
 
         if (index == -1) return false;
-        int toShootDeg = ( pieceDegrees * (index + 1) ) - (pieceDegrees / 2);
-        Direction toShoot = new Direction((float) Math.toRadians(toShootDeg));
-        spray(toShoot);
+//        int toShootDeg = ( pieceDegrees * (index + 1) ) - (pieceDegrees / 2);
+//        Direction toShoot = new Direction((float) Math.toRadians(toShootDeg));
+        spray(location.directionTo(closestBots[index].location));
         return true;
     }
 
