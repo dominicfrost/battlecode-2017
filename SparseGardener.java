@@ -249,7 +249,7 @@ public class SparseGardener extends Circle {
         for (RobotInfo ri : nearbyAllies) {
             if ((ri.type.equals(RobotType.ARCHON) || ri.type.equals(RobotType.GARDENER)) &&
                     location.distanceSquaredTo(ri.location) < sqrFloat(ri.type.bodyRadius + 4F + myType.bodyRadius)) {
-                randomSafeMove(ri.location.directionTo(location));
+                safeMove(ri.location.directionTo(location));
                 return;
             }
         }
@@ -369,7 +369,7 @@ public class SparseGardener extends Circle {
 //            scoutingDirection = randomDirection();
 //            debug("B" + scoutingDirection);
 //        }
-//        randomSafeMove(scoutingDirection);
+//        safeMove(scoutingDirection);
         moveWithBugger(enemyArchonLocs[rc.getID() % enemyArchonLocs.length], 0);
         return null;
     }
@@ -405,7 +405,7 @@ public class SparseGardener extends Circle {
         MapLocation needsWatered = findWhoNeedsWater();
         if (needsWatered != null)
             moveWithBugger(needsWatered, 0);
-        else randomSafeMove(randomDirection());
+        else safeMove(randomDirection());
     }
 
     private MapLocation findWhoNeedsWater() {

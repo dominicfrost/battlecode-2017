@@ -190,7 +190,7 @@ abstract public class Robot {
     }
 
 
-    protected boolean randomSafeMove(Direction startDir) throws GameActionException {
+    protected boolean safeMove(Direction startDir) throws GameActionException {
         if (hasMoved) return false;
 
         Direction toMove = null;
@@ -251,7 +251,7 @@ abstract public class Robot {
                 damage += e.type.attackPower;
             }
         }
-        debug("Damage at " + loc.toString() + " " + damage);
+
         return damage;
     }
 
@@ -274,62 +274,8 @@ abstract public class Robot {
     }
 
     protected boolean tryDodge() throws GameActionException {
-        return damageAtLocation(location) > 0 && randomSafeMove(randomDirection());
+        return damageAtLocation(location) > 0 && safeMove(randomDirection());
     }
-
-    private boolean anyoneTooClose() {
-        if (myType.equals(RobotType.LUMBERJACK)) return false;
-        for (RobotInfo e : nearbyEnemies) {
-            if (e.type == RobotType.ARCHON || e.type == RobotType.GARDENER) continue;
-            float bodyRad = e.type.bodyRadius;
-            if (e.getType() == RobotType.LUMBERJACK){
-                bodyRad = 2.0f;
-            }
-            if (location.distanceSquaredTo(e.location) <= Math.pow(myType.bodyRadius + bodyRad, 2) + .01F) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    protected boolean willAnyBulletsCollideWithMe() {
-        return willAnyBulletsCollideWithLocation(location);
-    }
-
-    protected boolean willAnyBulletsCollideWithLocation(MapLocation loc) {
-        for (BulletInfo b : nearbyBullets) {
-            if (willCollideLocation(b, loc)) return true;
-        }
-        for (BulletInfo b : nextRoundBullets) {
-            if (willCollideLocation(b, loc)) return true;
-        }
-        return false;
-    }
-
-    protected boolean willCollideLocation(BulletInfo bullet, MapLocation loc) {
-        debug("    willCollideLocation start");
-        MapLocation bulletLocation = bullet.location;
-
-        // Calculate bullet relations to this robot
-        Direction directionToRobot = bulletLocation.directionTo(loc);
-        float distToRobot = bulletLocation.distanceTo(loc);
-        float theta = bullet.dir.radiansBetween(directionToRobot);
-
-        // If theta > 90 degrees, then the bullet is traveling away from us and we can break early
-        if (Math.abs(theta) > Math.PI / 2) {
-            return false;
-        }
-
-        // distToRobot is our hypotenuse, theta is our angle, and we want to know this length of the opposite leg.
-        // This is the distance of a line that goes from location and intersects perpendicularly with propagationDirection.
-        // This corresponds to the smallest radius circle centered at our location that would intersect with the
-        // line that is the path of the bullet.
-        float perpendicularDist = (float) Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
-
-        debug("    willCollideLocation end");
-        return (perpendicularDist <= myType.bodyRadius);
-    }
-
 
     protected static Direction randomDirection() {
         return new Direction((float) Math.random() * 2 * (float) Math.PI);
@@ -550,7 +496,6 @@ abstract public class Robot {
         float nextDist;
         while (true) {
             locInChan = Coms.decodeLocation(rc.readBroadcast(broadcastChannel));
-            if (locInChan!=null)debug("loc in chan " + locInChan.location + " "  + locInChan.roundNum);
             if (locInChan == null || locInChan.roundNum < roundFilter) return closestLoc;
             nextDist = location.distanceSquaredTo(locInChan.location);
             if (nextDist < minDist) {
@@ -614,7 +559,7 @@ abstract public class Robot {
         float paddingForGardener = myType.equals(RobotType.GARDENER) ? 2F : 0F;
         for (RobotInfo ri : nearbyAllies) {
             if (location.distanceSquaredTo(ri.location) < sqrFloat(ri.type.bodyRadius + 2F + myType.bodyRadius + paddingForGardener)) {
-                randomSafeMove(ri.location.directionTo(location));
+                safeMove(ri.location.directionTo(location));
                 return;
             }
         }

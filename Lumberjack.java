@@ -89,7 +89,7 @@ public class Lumberjack extends Circle {
         }
 
         if (closestLoc != null) {
-            randomSafeMove(location.directionTo(closestLoc));
+            safeMove(location.directionTo(closestLoc));
             return;
         }
 
@@ -99,11 +99,6 @@ public class Lumberjack extends Circle {
     @Override
     protected void attackCircleGoal(MapLocation nearestTree, float goalRadius) throws GameActionException {
         if (hasAttacked) return;
-        debug("!atCircleGoal " + !atCircleGoal(nearestTree, goalRadius));
-//        if (!atCircleGoal(nearestTree, goalRadius)) return;
-//        TreeInfo ti = rc.senseTreeAtLocation(nearestTree);
-//        if (ti == null) return;
-//        chop(ti.getID());
         chopAnyOppTree();
     }
 

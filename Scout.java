@@ -84,7 +84,7 @@ public class Scout extends Circle {
         if (!rc.onTheMap(location.add(scoutingDirection, myType.sensorRadius - 1))) {
             scoutingDirection = randomDirection();
         }
-        randomSafeMove(scoutingDirection);
+        safeMove(scoutingDirection);
     }
 
     private void setHarasing(RobotInfo newHarassee) throws GameActionException {
@@ -129,7 +129,7 @@ public class Scout extends Circle {
 
         rc.setIndicatorLine(location, bulletTrees[0].location, 0, 255,0);
         TreeInfo closestNeutralTree = getClosestNeutralTree();
-        randomSafeMove(location.directionTo(closestNeutralTree.location));
+        safeMove(location.directionTo(closestNeutralTree.location));
     }
 
     private TreeInfo getClosestNeutralTree() {

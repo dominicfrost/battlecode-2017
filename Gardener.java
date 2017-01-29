@@ -168,17 +168,10 @@ public class Gardener extends Bugger {
         for (RobotInfo ri : nearbyAllies) {
             if ((ri.type.equals(RobotType.ARCHON) || ri.type.equals(RobotType.GARDENER)) &&
                     location.distanceSquaredTo(ri.location) < sqrFloat(ri.type.bodyRadius + 4F + myType.bodyRadius)) {
-                randomSafeMove(ri.location.directionTo(location));
+                safeMove(ri.location.directionTo(location));
                 return;
             }
         }
-    }
-
-    private boolean closeNeutralTrees() {
-        for (TreeInfo ti : nearbyTrees)
-            if (!ti.team.equals(myTeam) && location.distanceSquaredTo(ti.location) < sqrFloat(myType.bodyRadius + 1F + ti.radius)) return true;
-
-        return false;
     }
 
     private void setAtGarden() {
@@ -188,14 +181,6 @@ public class Gardener extends Bugger {
     private void atGarden() throws GameActionException {
         waterTree();
     }
-
-//    private void setMovingToSpawn() {
-//        state = GardenerState.MOVING_TO_SPAWN;
-//    }
-//
-//    private void moveToSpawn() throws GameActionException {
-//        if ()
-//    }
 
     private void setMovingToGarden() {
         state = GardenerState.MOVING_TO_GARDEN;

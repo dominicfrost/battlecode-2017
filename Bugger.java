@@ -37,6 +37,14 @@ abstract public class Bugger extends Robot {
         if (next != null) move(next);
     }
 
+    public void safeMoveWithBugger(MapLocation nextGoal, int newQuitThresh) throws GameActionException {
+        setGoal(nextGoal, newQuitThresh);
+        if (hasMoved) return;
+        Direction next = bugNextMove();
+        debug(""+next);
+        if (next != null) safeMove(next);
+    }
+
     public Direction nextStride(MapLocation nextGoal, int newQuitThresh) throws GameActionException {
         setGoal(nextGoal, newQuitThresh);
         if (hasMoved) return null;
