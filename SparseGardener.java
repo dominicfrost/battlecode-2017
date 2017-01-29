@@ -186,7 +186,9 @@ public class SparseGardener extends Circle {
         else invalidateGardenLocationIfOccupied();
 
         if (gardenLocation == null) {
-            stayAwayFromAllieGardenerAndArchons();
+//            moveToWhoNeedsWater();
+            debug("IOJ");
+            moveWithBugger(enemyArchonLocs[rc.getID() % enemyArchonLocs.length], 0);
             return;
         }
         rc.setIndicatorDot(gardenLocation, 0,0,0);
@@ -215,6 +217,7 @@ public class SparseGardener extends Circle {
             spot = checkTreeForPlantSpot(ti);
             if (spot != null) return spot;
         }
+
         return null;
     }
 
@@ -402,6 +405,10 @@ public class SparseGardener extends Circle {
             return;
         }
 
+        moveToWhoNeedsWater();
+    }
+
+    private void moveToWhoNeedsWater() throws GameActionException {
         MapLocation needsWatered = findWhoNeedsWater();
         if (needsWatered != null)
             moveWithBugger(needsWatered, 0);

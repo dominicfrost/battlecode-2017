@@ -6,9 +6,9 @@ import battlecode.common.*;
 abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .1F;
-    private final int ROBOT_ID = 10348;
-    private final int MIN_ROUND = 72;
-    private final int MAX_ROUND = 84;
+    private final int ROBOT_ID = 13698;
+    private final int MIN_ROUND = 112;
+    private final int MAX_ROUND = 112;
     private final float MAX_BULLET_SPEED = 4F;
 
     protected final float radian = 0.0174533F;
@@ -166,7 +166,7 @@ abstract public class Robot {
             return true;
         }
 
-        int checksPerSide = (int) (120.0F / TRY_MOVE_DEGREE_OFFSET);
+        int checksPerSide = (int) (180F / TRY_MOVE_DEGREE_OFFSET);
 
         // Now try a bunch of similar angles
         int currentCheck = 1;
@@ -240,6 +240,11 @@ abstract public class Robot {
                 damage += b.damage;
             }
         }
+//        for (BulletInfo b : nearbyBullets) {
+//            if (willCollideLocation(b, loc)) {
+//                damage += b.damage;
+//            }
+//        }
 
         // assume they will shoot us / strike us
         for (RobotInfo e : nearbyEnemies) {
@@ -251,8 +256,37 @@ abstract public class Robot {
                 damage += e.type.attackPower;
             }
         }
-
+        debug("Dagmage at location " + loc.toString() + " " + damage);
         return damage;
+    }
+
+    protected boolean willCollideLocation(BulletInfo bullet, MapLocation loc) {
+        // Get relevant bullet information
+        Direction propagationDirection = bullet.dir;
+        MapLocation bulletLocation = bullet.location;
+
+        // Calculate bullet relations to this robot
+        Direction directionToRobot = bulletLocation.directionTo(loc);
+        float distToRobot = bulletLocation.distanceTo(loc);
+        if (distToRobot > bullet.speed) {
+            debug("WUt " + distToRobot + " " + bullet.speed);
+            return false;
+        }
+        debug("z");
+        float theta = propagationDirection.radiansBetween(directionToRobot);
+
+        // If theta > 90 degrees, then the bullet is traveling away from us and we can break early
+        if (Math.abs(theta) > Math.PI / 2) {
+            return false;
+        }
+
+        // distToRobot is our hypotenuse, theta is our angle, and we want to know this length of the opposite leg.
+        // This is the distance of a line that goes from location and intersects perpendicularly with propagationDirection.
+        // This corresponds to the smallest radius circle centered at our location that would intersect with the
+        // line that is the path of the bullet.
+        float perpendicularDist = (float) Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
+//        float adjacentDist = (float) Math.abs(distToRobot * Math.cos(theta));
+        return (perpendicularDist <= myType.bodyRadius);
     }
 
     protected BulletInfo[] advanceBullets(BulletInfo[] bulletsToAdvance) {
@@ -288,7 +322,7 @@ abstract public class Robot {
     protected boolean attackIfWayClose() throws GameActionException {
         if (hasAttacked) return false;
         for (RobotInfo b : nearbyEnemies) {
-            if (location.distanceSquaredTo(b.location) <= Math.pow(b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE, 2)) {
+            if (location.distanceTo(b.location) <= b.type.bodyRadius + myType.bodyRadius + WAY_CLOSE_DISTANCE) {
                 spray(location.directionTo(b.location));
                 return true;
             }
@@ -380,11 +414,19 @@ abstract public class Robot {
     }
 
     private void addSingleBulletToNearby(Direction dir) {
+        nearbyBullets = Arrays.copyOf(nearbyBullets, nearbyBullets.length + 1);
+        nearbyBullets[nearbyBullets.length - 1] = newBullet(dir);
+
         nextRoundBullets = Arrays.copyOf(nextRoundBullets, nextRoundBullets.length + 1);
         nextRoundBullets[nextRoundBullets.length - 1] = newBullet(dir);
     }
 
     private void addTriadBulletToNearby(Direction dir) {
+        nearbyBullets = Arrays.copyOf(nearbyBullets, nearbyBullets.length + 3);
+        nearbyBullets[nearbyBullets.length - 1] = newBullet(dir);
+        nearbyBullets[nearbyBullets.length - 2] = newBullet(dir.rotateRightDegrees(20));
+        nearbyBullets[nearbyBullets.length - 3] = newBullet(dir.rotateLeftDegrees(20));
+
         nextRoundBullets = Arrays.copyOf(nextRoundBullets, nextRoundBullets.length + 3);
         nextRoundBullets[nextRoundBullets.length - 1] = newBullet(dir);
         nextRoundBullets[nextRoundBullets.length - 2] = newBullet(dir.rotateRightDegrees(20));
@@ -392,6 +434,13 @@ abstract public class Robot {
     }
 
     private void addPentadBulletToNearby(Direction dir) {
+        nearbyBullets = Arrays.copyOf(nearbyBullets, nearbyBullets.length + 5);
+        nearbyBullets[nearbyBullets.length - 1] = newBullet(dir);
+        nearbyBullets[nearbyBullets.length - 2] = newBullet(dir.rotateRightDegrees(15));
+        nearbyBullets[nearbyBullets.length - 3] = newBullet(dir.rotateLeftDegrees(15));
+        nearbyBullets[nearbyBullets.length - 4] = newBullet(dir.rotateRightDegrees(30));
+        nearbyBullets[nearbyBullets.length - 5] = newBullet(dir.rotateLeftDegrees(30));
+
         nextRoundBullets = Arrays.copyOf(nextRoundBullets, nextRoundBullets.length + 5);
         nextRoundBullets[nextRoundBullets.length - 1] = newBullet(dir);
         nextRoundBullets[nextRoundBullets.length - 2] = newBullet(dir.rotateRightDegrees(15));
