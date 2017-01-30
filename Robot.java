@@ -6,9 +6,9 @@ import battlecode.common.*;
 abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .1F;
-    private final int ROBOT_ID = 13698;
-    private final int MIN_ROUND = 112;
-    private final int MAX_ROUND = 112;
+    private final int ROBOT_ID = 13527;
+    private final int MIN_ROUND = 60;
+    private final int MAX_ROUND = 62;
     private final float MAX_BULLET_SPEED = 4F;
 
     protected final float radian = 0.0174533F;

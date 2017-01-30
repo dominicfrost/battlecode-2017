@@ -187,7 +187,6 @@ public class SparseGardener extends Circle {
 
         if (gardenLocation == null) {
 //            moveToWhoNeedsWater();
-            debug("IOJ");
             moveWithBugger(enemyArchonLocs[rc.getID() % enemyArchonLocs.length], 0);
             return;
         }
@@ -199,6 +198,7 @@ public class SparseGardener extends Circle {
     }
 
     private void invalidateGardenLocationIfOccupied() throws GameActionException {
+
         if (rc.canSenseAllOfCircle(gardenLocation, GameConstants.BULLET_TREE_RADIUS) &&
                 rc.isCircleOccupiedExceptByThisRobot(gardenLocation, GameConstants.BULLET_TREE_RADIUS)) {
             gardenLocation = null;
@@ -207,7 +207,7 @@ public class SparseGardener extends Circle {
 
     private MapLocation findPlantSpot() throws GameActionException {
         MapLocation spot;
-        if (nearbyTrees.length == 0) {
+        if (noNearbyTrees()) {
             Direction r = randomPlantDir();
             if (r == null) return null;
             return location.add(r, myType.bodyRadius + GameConstants.BULLET_TREE_RADIUS);
@@ -219,6 +219,13 @@ public class SparseGardener extends Circle {
         }
 
         return null;
+    }
+
+    private boolean noNearbyTrees() {
+        for (TreeInfo ti: nearbyTrees) {
+            if (ti.team.equals(myTeam)) return false;
+        }
+        return true;
     }
 
     private MapLocation checkTreeForPlantSpot(TreeInfo ti) throws GameActionException {
@@ -325,7 +332,7 @@ public class SparseGardener extends Circle {
         if (rt.equals(RobotType.TANK)) return findBuildSpotForTank();
 
         MapLocation spot;
-        if (nearbyTrees.length == 0) {
+        if (noNearbyTrees()) {
             Direction r = randomSpawnDir(rt);
             if (r == null) return null;
             return location.add(r, myType.bodyRadius + rt.bodyRadius);
