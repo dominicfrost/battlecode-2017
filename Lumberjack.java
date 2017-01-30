@@ -89,7 +89,21 @@ public class Lumberjack extends Circle {
         }
 
         if (closestLoc != null) {
-            safeMove(location.directionTo(closestLoc));
+            circleInOnTree(closestLoc);
+            return;
+        }
+
+        for (TreeInfo ti: nearbyTrees) {
+            if (ti.team.equals(myTeam)) continue;
+            nextDist = location.distanceSquaredTo(ti.location);
+            if (nextDist < minDist) {
+                minDist = nextDist;
+                closestLoc = ti.location;
+            }
+        }
+
+        if (closestLoc != null) {
+            circleInOnTree(closestLoc);
             return;
         }
 

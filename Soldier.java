@@ -9,6 +9,7 @@ public class Soldier extends Bugger {
 
     protected void doTurn() throws GameActionException {
         tryDodge();
+        tryShakeTrees();
         destination = getDestination();
 
         if (destination != null) {

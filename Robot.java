@@ -5,10 +5,10 @@ import battlecode.common.*;
 
 abstract public class Robot {
     // DEBUG CONSTANTS
-    protected final float WAY_CLOSE_DISTANCE = .1F;
-    private final int ROBOT_ID = 13527;
-    private final int MIN_ROUND = 60;
-    private final int MAX_ROUND = 62;
+    protected final float WAY_CLOSE_DISTANCE = .001F;
+    private final int ROBOT_ID = 1544;
+    private final int MIN_ROUND = 1035;
+    private final int MAX_ROUND = 1035;
     private final float MAX_BULLET_SPEED = 4F;
 
     protected final float radian = 0.0174533F;
@@ -390,7 +390,10 @@ abstract public class Robot {
             }
         }
 
-        if (index == -1) return false;
+        if (index == -1) {
+            debug("HI");
+            return false;
+        }
 //        int toShootDeg = ( pieceDegrees * (index + 1) ) - (pieceDegrees / 2);
 //        Direction toShoot = new Direction((float) Math.toRadians(toShootDeg));
         spray(location.directionTo(closestBots[index].location));
@@ -622,23 +625,44 @@ abstract public class Robot {
     protected MapLocation acquireDestination() throws GameActionException {
         int currentRound = rc.getRoundNum();
 
+        MapLocation closest = null;
+        float closestDist = Float.MAX_VALUE;
+
+        MapLocation peskyAttacker = nearestPeskyAttacker();
+        if (peskyAttacker != null) {
+            closest = peskyAttacker;
+            closestDist = location.distanceTo(peskyAttacker);
+        }
+
         // look for an AOI
+        float distTo;
         DecodedLocation dl = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_1));
         if (dl != null && dl.roundNum - currentRound < 100) {
-            return dl.location;
+            distTo = location.distanceTo(dl.location);
+            if (distTo < closestDist) {
+                closest = dl.location;
+                closestDist = distTo;
+            }
         }
 
         dl = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_2));
         if (dl != null && dl.roundNum - currentRound < 100) {
-            return dl.location;
+            distTo = location.distanceTo(dl.location);
+            if (distTo < closestDist) {
+                closest = dl.location;
+                closestDist = distTo;
+            }
         }
 
         dl = Coms.decodeLocation(rc.readBroadcast(Coms.AREA_OF_INTEREST_3));
         if (dl != null && dl.roundNum - currentRound < 100) {
-            return dl.location;
+            distTo = location.distanceTo(dl.location);
+            if (distTo < closestDist) {
+                closest = dl.location;
+            }
         }
 
-        return null;
+        return closest;
     }
 
     protected boolean atDestination(MapLocation l) throws GameActionException {

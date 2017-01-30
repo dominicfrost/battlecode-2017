@@ -174,12 +174,12 @@ public class SparseGardener extends Circle {
             return;
         }
 
-//        if (shouldBuildBot()) {
-//            gardenLocation = null;
-//            setFindingSpawnSpot();
-//            findingSpawnSpot();
-//            return;
-//        }
+        if (shouldBuildBot()) {
+            gardenLocation = null;
+            setFindingSpawnSpot();
+            findingSpawnSpot();
+            return;
+        }
 
         if (gardenLocation == null )
             gardenLocation = findPlantSpot();
@@ -269,7 +269,7 @@ public class SparseGardener extends Circle {
         int roundNum = rc.getRoundNum();
         if (!rc.hasTreeBuildRequirements()) return false;
         if (roundNum < 40) return false;
-        return roundNum < 250 || (roundNum + 60) / (rc.getTreeCount() + 1) > 60;
+        return roundNum < 300 || (roundNum + 60) / (rc.getTreeCount() + 1) > 100;
     }
 
     /*
@@ -304,7 +304,7 @@ public class SparseGardener extends Circle {
         else invalidateBuildLocationIfOccupied();
 
         if (buildingLocation == null) {
-            if (!hasMoved) stayAwayFromAllieGardenerAndArchons();
+            moveWithBugger(enemyArchonLocs[rc.getID() % enemyArchonLocs.length], 0);
             return;
         }
         rc.setIndicatorDot(buildingLocation, 0,55,233);
