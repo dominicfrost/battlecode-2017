@@ -16,10 +16,12 @@ public class SparseGardener extends Circle {
     private int soldierCount;
     private int tankCount;
     private int scoutCount;
+    private int gardenerCount;
     private int ljCountCache;
     private int soldierCountCache;
     private int tankCountCache;
     private int scoutCountCache;
+    private int gardenerCountCache;
 
     private MapLocation gardenLocation;
     private MapLocation buildingLocation;
@@ -92,16 +94,19 @@ public class SparseGardener extends Circle {
         int soldierTotal = rc.readBroadcast(Coms.SOLDIER_COUNT);
         int scoutTotal = rc.readBroadcast(Coms.SCOUT_COUNT);
         int tankTotal = rc.readBroadcast(Coms.TANK_COUNT);
+        int gardenerTotal = rc.readBroadcast(Coms.GARNDENER_COUNT);
 
         ljCount = ljTotal - ljCountCache;
         soldierCount = soldierTotal - soldierCountCache;
         scoutCount = scoutTotal - scoutCountCache;
         tankCount = tankTotal - tankCountCache;
+        gardenerCount = gardenerTotal - gardenerCountCache;
 
         ljCountCache = ljTotal;
         soldierCountCache = soldierTotal;
         scoutCountCache = scoutTotal;
         tankCountCache = tankTotal;
+        gardenerCountCache = gardenerTotal;
     }
 
     protected void doTurn() throws GameActionException {
@@ -280,7 +285,7 @@ public class SparseGardener extends Circle {
         int roundNum = rc.getRoundNum();
         if (!rc.hasTreeBuildRequirements()) return false;
         if (roundNum < 40) return false;
-        return roundNum < 250 || (roundNum + 150) / (rc.getTreeCount() + 1) > 150;
+        return roundNum < 250 || (double) (rc.getTreeCount() + 6) / (double) (gardenerCount + 1) <= 6.0;
     }
 
     /*

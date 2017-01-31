@@ -6,9 +6,9 @@ import battlecode.common.*;
 abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .001F;
-    private final int ROBOT_ID = 11304;
-    private final int MIN_ROUND = 339;
-    private final int MAX_ROUND = 341;
+    private final int ROBOT_ID = 11564;
+    private final int MIN_ROUND = 1196;
+    private final int MAX_ROUND = 1196;
     private final float MAX_BULLET_SPEED = 4F;
 
     protected final float radian = 0.0174533F;
@@ -339,7 +339,7 @@ abstract public class Robot {
 //    }
 
     private boolean treeInTheWay(RobotInfo bot, TreeInfo tree) {
-        if (location.distanceTo(tree.location) - tree.radius < location.distanceTo(bot.location) - bot.type.bodyRadius) return false;
+        if (location.distanceTo(tree.location) - tree.radius < location.distanceTo(bot.location) - bot.type.bodyRadius) return true;
         Direction toBot = location.directionTo(bot.location);
         Direction toTree = location.directionTo(tree.location);
         float theta = toBot.radiansBetween(toTree);

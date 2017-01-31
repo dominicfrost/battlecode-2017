@@ -27,6 +27,7 @@ public class Archon extends Robot {
         postPeskyAttackers();
         trySpawnGardener();
         tryDodge();
+        stayAwayFromAllies();
 //        if (tryDodge()) return; // think about immediate health
 //        moveToSafestLocation(); // think about long term health
     }
