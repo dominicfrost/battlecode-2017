@@ -11,18 +11,15 @@ public class Lumberjack extends Circle {
         tryDodge();
 
         MapLocation nearestTree = nearestPeskyTree();
-        MapLocation nearestAttacker = nearestPeskyAttacker();
 
         tryShakeTrees();
         if (shouldStrike()) strike();
         chopTreeWithRobot();
 
-        if (nearestTree == null && nearestAttacker == null) {
+        if (nearestTree == null) {
             findNextSpot();
-        } else if (nearestAttacker == null || (nearestTree != null && location.distanceSquaredTo(nearestTree) < location.distanceSquaredTo(nearestAttacker))) {
+        } else  {
             circleInOnTree(nearestTree);
-        } else {
-            circleInOnEnemy(nearestAttacker);
         }
 
         tryShakeTrees();

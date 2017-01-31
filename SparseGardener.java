@@ -1,7 +1,5 @@
 package battlecode2017;
 import battlecode.common.*;
-import davebot.*;
-
 
 public class SparseGardener extends Circle {
 
@@ -113,7 +111,6 @@ public class SparseGardener extends Circle {
         postPeskyTrees();
         postPeskyAttackers();
         waterTree();
-        debug(""+state);
         switch (state) {
             case FINDING_PLANT_SPOT:
                 findingPlantSpot();
@@ -202,19 +199,20 @@ public class SparseGardener extends Circle {
         else invalidateGardenLocationIfOccupied();
 
         if (gardenLocation == null) {
-//            moveToWhoNeedsWater();
             moveWithBugger(enemyArchonLocs[rc.getID() % enemyArchonLocs.length], 0);
             return;
         }
         rc.setIndicatorDot(gardenLocation, 0,0,0);
         moveCirclingLocationWhileStayingOutOfGoal(gardenLocation, GameConstants.BULLET_TREE_RADIUS);
         if (atButNotOnCircleGoal(gardenLocation, GameConstants.BULLET_TREE_RADIUS) && isBuildReady && rc.hasTreeBuildRequirements()) {
-            plantTree(location.directionTo(gardenLocation));
+            if (rc.canPlantTree(location.directionTo(gardenLocation)))
+                plantTree(location.directionTo(gardenLocation));
+            else
+                safeMove(randomDirection());
         }
     }
 
     private void invalidateGardenLocationIfOccupied() throws GameActionException {
-
         if (rc.canSenseAllOfCircle(gardenLocation, GameConstants.BULLET_TREE_RADIUS) &&
                 rc.isCircleOccupiedExceptByThisRobot(gardenLocation, GameConstants.BULLET_TREE_RADIUS)) {
             gardenLocation = null;
@@ -262,10 +260,13 @@ public class SparseGardener extends Circle {
 
     private MapLocation checkDirectionForPlantSpot(TreeInfo ti, Direction dir) throws GameActionException {
         MapLocation spot = ti.location.add(dir, ti.radius + 2.5F + GameConstants.BULLET_TREE_RADIUS);
-        rc.setIndicatorDot(spot, 155,0,0);
         if (rc.canSenseAllOfCircle(spot, GameConstants.BULLET_TREE_RADIUS) &&
             rc.onTheMap(spot, GameConstants.BULLET_TREE_RADIUS) &&
-            !rc.isCircleOccupiedExceptByThisRobot(spot, GameConstants.BULLET_TREE_RADIUS)) return spot;
+            !rc.isCircleOccupiedExceptByThisRobot(spot, GameConstants.BULLET_TREE_RADIUS)) {
+
+            rc.setIndicatorDot(spot, 155,0,0);
+            return spot;
+        }
         return null;
     }
 

@@ -16,7 +16,6 @@ abstract public class Circle extends Bugger {
         if (atCircleGoal(goal, goalRadius)) return;
 
         // If i'm not close enough
-        debug("moveCirclingLocation " + location.distanceSquaredTo(goal) + "  "+ sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius));
         if (location.distanceSquaredTo(goal) > sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius)) {
             moveWithBugger(goal, 0);
             return;
@@ -27,24 +26,14 @@ abstract public class Circle extends Bugger {
 
     protected void moveCirclingLocationWhileStayingOutOfGoal(MapLocation goal, float goalRadius) throws GameActionException {
         if (hasMoved) return;
-        debug("A");
         if (atButNotOnCircleGoal(goal, goalRadius)) return;
-        debug("B");
 
         // If i'm not close enough
-        debug("moveCirclingLocation " + location.distanceSquaredTo(goal) + "  "+ sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius));
         float distToGoal = location.distanceSquaredTo(goal);
-//        float
         if (distToGoal > sqrFloat(goalRadius + myType.strideRadius + myType.bodyRadius)) {
-            debug("C" + hasMoved);
             moveWithBugger(goal, 0);
             return;
         }
-
-//        if (distToGoal < sqrFloat(myType.strideRadius + myType.bodyRadius)) {
-//
-//            return;
-//        }
         moveInOnGoal(goal, goalRadius);
     }
 
@@ -69,13 +58,11 @@ abstract public class Circle extends Bugger {
         Direction right, left;
         MapLocation next;
         MapLocation valid = null;
-        debug("moveInOnGoal");
 
         int count = 0;
 
         next = nextLoc(goal, goalRadius, fromGoal);
         if (!rc.isCircleOccupiedExceptByThisRobot(next, myType.bodyRadius)) valid = next;
-        debugIndicator(next);
         if (rc.canMove(next)) {
             move(next);
             return;
@@ -86,7 +73,6 @@ abstract public class Circle extends Bugger {
             next = nextLoc(goal, goalRadius, right);
             if (location.distanceSquaredTo(next) > myType.strideRadius) break;
             if (valid == null && !rc.isCircleOccupiedExceptByThisRobot(next, myType.bodyRadius)) valid = next;
-            debugIndicator(next);
             if (rc.canMove(next)) {
                 move(next);
                 return;
@@ -95,7 +81,6 @@ abstract public class Circle extends Bugger {
             left = fromGoal.rotateLeftDegrees(MOVE_IN_GRANULARITY * count);
             next = nextLoc(goal, goalRadius, left);
             if (location.distanceSquaredTo(next) > myType.strideRadius) break;
-            debugIndicator(next);
             if (valid == null && !rc.isCircleOccupiedExceptByThisRobot(next, myType.bodyRadius)) valid = next;
             if (rc.canMove(next)) {
                 move(next);

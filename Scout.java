@@ -102,7 +102,6 @@ public class Scout extends Circle {
             scout();
             return;
         }
-
         moveCirclingLocation(harassee.location, harassee.getRadius());
         attackCircleGoal(harassee.location, harassee.getRadius());
     }
@@ -182,15 +181,6 @@ public class Scout extends Circle {
 
     private boolean closeEnoughToShake(TreeInfo ti) {
         return location.distanceSquaredTo(ti.location) < ti.radius + myType.bodyRadius + 1F;
-    }
-
-    @Override
-    protected boolean tryShakeTree(TreeInfo ti) throws GameActionException {
-        if (super.tryShakeTree(ti)) {
-            return true;
-        }
-
-        return false;
     }
 
     private void determineAreasOfInterest() throws GameActionException {

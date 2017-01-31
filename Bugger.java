@@ -31,11 +31,8 @@ abstract public class Bugger extends Robot {
 
     public void moveWithBugger(MapLocation nextGoal, int newQuitThresh) throws GameActionException {
         setGoal(nextGoal, newQuitThresh);
-        debug("g "+goal);
-        debug("l "+location);
         if (hasMoved || location.distanceTo(goal) <= quitThresh) return;
         Direction next = bugNextMove();
-        debug(""+next);
         if (next != null) move(next);
         else tryMove(location.directionTo(nextGoal));
     }
@@ -44,7 +41,6 @@ abstract public class Bugger extends Robot {
         setGoal(nextGoal, newQuitThresh);
         if (hasMoved) return;
         Direction next = bugNextMove();
-        debug(""+next);
         if (next != null) safeMove(next);
     }
 

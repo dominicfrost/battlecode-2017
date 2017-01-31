@@ -6,9 +6,9 @@ import battlecode.common.*;
 abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .001F;
-    private final int ROBOT_ID = 11564;
-    private final int MIN_ROUND = 1196;
-    private final int MAX_ROUND = 1196;
+    private final int ROBOT_ID = 12416;
+    private final int MIN_ROUND = 737;
+    private final int MAX_ROUND = 737;
     private final float MAX_BULLET_SPEED = 4F;
 
     protected final float radian = 0.0174533F;
@@ -50,9 +50,7 @@ abstract public class Robot {
         while (true) {
             try {
                 initRoundState();
-                debug("doTurn " );
                 doTurn();
-                debug("doTurn/ " );
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -252,8 +250,10 @@ abstract public class Robot {
                 if (loc.distanceTo(e.location) <= myType.bodyRadius + 2F + e.type.strideRadius) {
                     damage += e.type.attackPower;
                 }
-            } else if (loc.distanceTo(e.location) <= myType.bodyRadius + e.type.bodyRadius + e.type.strideRadius) {
-                damage += e.type.attackPower;
+            } else if (!e.type.equals(RobotType.GARDENER) && !e.type.equals(RobotType.ARCHON)) {
+                if (loc.distanceTo(e.location) <= myType.bodyRadius + e.type.bodyRadius + e.type.strideRadius) {
+                    damage += e.type.attackPower;
+                }
             }
         }
         return damage;
@@ -339,11 +339,11 @@ abstract public class Robot {
 //    }
 
     private boolean treeInTheWay(RobotInfo bot, TreeInfo tree) {
-        if (location.distanceTo(tree.location) - tree.radius < location.distanceTo(bot.location) - bot.type.bodyRadius) return true;
         Direction toBot = location.directionTo(bot.location);
         Direction toTree = location.directionTo(tree.location);
         float theta = toBot.radiansBetween(toTree);
-        return Math.sin(theta) * location.distanceTo(bot.location) < tree.radius;
+        return Math.sin(theta) * location.distanceTo(bot.location) < tree.radius &&
+                location.distanceTo(tree.location) - tree.radius < location.distanceTo(bot.location) - bot.type.bodyRadius;
     }
 
     protected boolean pieCountAttack() throws GameActionException {
