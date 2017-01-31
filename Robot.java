@@ -278,9 +278,9 @@ abstract public class Robot {
         // This is the distance of a line that goes from location and intersects perpendicularly with propagationDirection.
         // This corresponds to the smallest radius circle centered at our location that would intersect with the
         // line that is the path of the bullet.
-//        float perpendicularDist = (float) Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
+        float perpendicularDist = (float) Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
         float adjacentDist = (float) Math.abs(distToRobot * Math.cos(theta));
-//        return (perpendicularDist <= locRadius) && adjacentDist < maxAdjacent;
+        return (perpendicularDist <= locRadius) && adjacentDist < maxAdjacent;
 
 
     }
