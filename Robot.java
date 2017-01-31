@@ -6,9 +6,9 @@ import battlecode.common.*;
 abstract public class Robot {
     // DEBUG CONSTANTS
     protected final float WAY_CLOSE_DISTANCE = .001F;
-    private final int ROBOT_ID = 1544;
-    private final int MIN_ROUND = 1035;
-    private final int MAX_ROUND = 1035;
+    private final int ROBOT_ID = 11304;
+    private final int MIN_ROUND = 339;
+    private final int MAX_ROUND = 341;
     private final float MAX_BULLET_SPEED = 4F;
 
     protected final float radian = 0.0174533F;
@@ -241,7 +241,7 @@ abstract public class Robot {
             }
         }
 //        for (BulletInfo b : nearbyBullets) {
-//            if (willCollideLocation(b, loc)) {
+//            if (willCollideLocation(b, loc, myType.bodyRadius, b.speed)) {
 //                damage += b.damage;
 //            }
 //        }
@@ -256,11 +256,10 @@ abstract public class Robot {
                 damage += e.type.attackPower;
             }
         }
-        debug("Dagmage at location " + loc.toString() + " " + damage);
         return damage;
     }
 
-    protected boolean willCollideLocation(BulletInfo bullet, MapLocation loc) {
+    protected boolean willCollideLocation(BulletInfo bullet, MapLocation loc, float locRadius, float maxAdjacent) {
         // Get relevant bullet information
         Direction propagationDirection = bullet.dir;
         MapLocation bulletLocation = bullet.location;
@@ -268,11 +267,6 @@ abstract public class Robot {
         // Calculate bullet relations to this robot
         Direction directionToRobot = bulletLocation.directionTo(loc);
         float distToRobot = bulletLocation.distanceTo(loc);
-        if (distToRobot > bullet.speed) {
-            debug("WUt " + distToRobot + " " + bullet.speed);
-            return false;
-        }
-        debug("z");
         float theta = propagationDirection.radiansBetween(directionToRobot);
 
         // If theta > 90 degrees, then the bullet is traveling away from us and we can break early
@@ -284,9 +278,11 @@ abstract public class Robot {
         // This is the distance of a line that goes from location and intersects perpendicularly with propagationDirection.
         // This corresponds to the smallest radius circle centered at our location that would intersect with the
         // line that is the path of the bullet.
-        float perpendicularDist = (float) Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
-//        float adjacentDist = (float) Math.abs(distToRobot * Math.cos(theta));
-        return (perpendicularDist <= myType.bodyRadius);
+//        float perpendicularDist = (float) Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
+        float adjacentDist = (float) Math.abs(distToRobot * Math.cos(theta));
+//        return (perpendicularDist <= locRadius) && adjacentDist < maxAdjacent;
+
+
     }
 
     protected BulletInfo[] advanceBullets(BulletInfo[] bulletsToAdvance) {
@@ -342,6 +338,14 @@ abstract public class Robot {
 //        return false;
 //    }
 
+    private boolean treeInTheWay(RobotInfo bot, TreeInfo tree) {
+        if (location.distanceTo(tree.location) - tree.radius < location.distanceTo(bot.location) - bot.type.bodyRadius) return false;
+        Direction toBot = location.directionTo(bot.location);
+        Direction toTree = location.directionTo(tree.location);
+        float theta = toBot.radiansBetween(toTree);
+        return Math.sin(theta) * location.distanceTo(bot.location) < tree.radius;
+    }
+
     protected boolean pieCountAttack() throws GameActionException {
         if (hasAttacked) return false;
         int numPieces = 6;
@@ -373,13 +377,16 @@ abstract public class Robot {
             countIndex = (int) degrees / pieceDegrees;
             counts[countIndex]-= multiplier;
         }
-//        for (TreeInfo ri : nearbyTrees) {
-//            if (!ri.team.equals(enemyTeam)) continue;
-//            next = location.directionTo(ri.location);
-//            degrees = (next.getAngleDegrees() + 360) % 360;
-//            countIndex = (int) degrees / pieceDegrees;
-//            counts[countIndex]++;
-//        }
+
+        for (TreeInfo ri : nearbyTrees) {
+            next = location.directionTo(ri.location);
+            degrees = (next.getAngleDegrees() + 360) % 360;
+            countIndex = (int) degrees / pieceDegrees;
+            if (closestBots[countIndex] == null) continue;
+            if (treeInTheWay(closestBots[countIndex], ri)) {
+                counts[countIndex] = Integer.MIN_VALUE;
+            }
+        }
 
         int maxCount = 0;
         int index = -1;
@@ -390,12 +397,10 @@ abstract public class Robot {
             }
         }
 
-        if (index == -1) {
-            debug("HI");
-            return false;
-        }
+        if (index == -1) return false;
 //        int toShootDeg = ( pieceDegrees * (index + 1) ) - (pieceDegrees / 2);
 //        Direction toShoot = new Direction((float) Math.toRadians(toShootDeg));
+
         spray(location.directionTo(closestBots[index].location));
         return true;
     }

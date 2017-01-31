@@ -125,17 +125,17 @@ public class SparseGardener extends Circle {
     private RobotType getBuildType() {
         int roundNum = rc.getRoundNum();
         if (roundNum == 2) return RobotType.SCOUT;
-        if (roundNum <= 40) return RobotType.SOLDIER;
+        if (soldierCount == 0 && rc.hasRobotBuildRequirements(RobotType.SOLDIER)) return RobotType.SOLDIER;
         switch(socialClass) {
             case LOWER:
                 if (numBullets < 200) return null;
-                return spawnUnitsWithThresholds(25, 25, 50, 0);
+                return spawnUnitsWithThresholds(10, 10, 80, 0);
             case MIDDLE:
                 if (numBullets < 300) return null;
-                return spawnUnitsWithThresholds(15, 15, 50, 20);
+                return spawnUnitsWithThresholds(10, 0, 70, 20);
             default: // UPPER
                 if (numBullets < 500) return null;
-                return spawnUnitsWithThresholds(0, 0, 50, 50);
+                return spawnUnitsWithThresholds(10, 0, 50, 50);
         }
     }
 
@@ -153,6 +153,17 @@ public class SparseGardener extends Circle {
         } else {
             return RobotType.SOLDIER;
         }
+    }
+
+    private boolean shouldSpawnLumberjack() {
+//        DecodedDensity density = Coms.decodeTreeDensity(rc.readBroadcast(Coms.TREE_DENSITY));
+//        if (density == null) return false;
+//        System.out.println(density.runningAvg);
+//        return density.runningAvg > 10;
+        for (TreeInfo ti : nearbyTrees) {
+            if (!ti.team.equals(myTeam) && ti.location.distanceTo(location) <= 2F) return true;
+        }
+        return false;
     }
 
 
@@ -269,7 +280,7 @@ public class SparseGardener extends Circle {
         int roundNum = rc.getRoundNum();
         if (!rc.hasTreeBuildRequirements()) return false;
         if (roundNum < 40) return false;
-        return roundNum < 300 || (roundNum + 60) / (rc.getTreeCount() + 1) > 100;
+        return roundNum < 250 || (roundNum + 150) / (rc.getTreeCount() + 1) > 150;
     }
 
     /*
@@ -296,6 +307,12 @@ public class SparseGardener extends Circle {
             // Should never happen, but just in case
             setWatering();
             watering();
+            return;
+        }
+
+        Direction r = randomSpawnDir(buildingType);
+        if (r != null) {
+            build(buildingType, r);
             return;
         }
 
@@ -330,7 +347,6 @@ public class SparseGardener extends Circle {
 
     private MapLocation findBuildSpot(RobotType rt) throws GameActionException {
         if (rt.equals(RobotType.TANK)) return findBuildSpotForTank();
-
         MapLocation spot;
         if (noNearbyTrees()) {
             Direction r = randomSpawnDir(rt);
@@ -457,6 +473,7 @@ public class SparseGardener extends Circle {
         Direction nextDir;
         for (int i = 0; i < 12; i++) {
             nextDir = Direction.getNorth().rotateRightDegrees(i * 30);
+            rc.setIndicatorDot(location.add(nextDir), 23, 123,222);
             if (rc.canBuildRobot(rt, nextDir)) return nextDir;
         }
         return null;

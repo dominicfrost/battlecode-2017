@@ -11,7 +11,6 @@ public class Soldier extends Bugger {
         tryDodge();
         tryShakeTrees();
         destination = getDestination();
-
         if (destination != null) {
             moveWithBugger(destination, 5);
         } else {
